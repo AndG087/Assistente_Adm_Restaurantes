@@ -1,0 +1,39 @@
+# Variáveis de ambiente (contêm senhas locais)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Documentos de teste e uploads (podem conter dados reais)
+uploads/
+documentos_teste/
+
+# Temporários e logs
+*.log
+*.tmp
+tmp/
+
+# Editores e sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
