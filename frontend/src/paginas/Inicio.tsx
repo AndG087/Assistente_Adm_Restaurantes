@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BarrasTotais } from '../components/BarrasTotais'
 import { Icone, type NomeIcone } from '../components/Icone'
+import { ProximasContas } from '../components/ProximasContas'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
 import type { Pagina } from '../hooks/useNavegacao'
@@ -91,53 +92,64 @@ export function Inicio({ irPara }: InicioProps) {
         )}
       </section>
 
-      <section className="cartao painel-despesas" aria-labelledby="titulo-despesas-mes">
-        <header className="painel-despesas__cabecalho">
-          <div>
-            <h3 id="titulo-despesas-mes" className="inicio__titulo-secao">
-              Despesas de {NOME_DO_MES.format(new Date(`${mes.de}T12:00:00`))}
-            </h3>
-            <p className="painel-despesas__periodo">
-              Por categoria · {formatarData(mes.de)} a {formatarData(mes.ate)}
-            </p>
-          </div>
-          {r && r.quantidade > 0 && (
-            <div className="painel-despesas__total">
-              <span className="painel-despesas__rotulo">Total do mês</span>
-              <strong>{formatarMoeda(r.valor_total)}</strong>
-              <span>
-                {r.quantidade} {r.quantidade === 1 ? 'despesa' : 'despesas'}
-              </span>
+      <div className="inicio__colunas">
+        <section className="cartao painel-despesas" aria-labelledby="titulo-despesas-mes">
+          <header className="painel-despesas__cabecalho">
+            <div>
+              <h3 id="titulo-despesas-mes" className="inicio__titulo-secao">
+                Despesas de {NOME_DO_MES.format(new Date(`${mes.de}T12:00:00`))}
+              </h3>
+              <p className="painel-despesas__periodo">
+                Por categoria · {formatarData(mes.de)} a {formatarData(mes.ate)}
+              </p>
             </div>
+            {r && r.quantidade > 0 && (
+              <div className="painel-despesas__total">
+                <span className="painel-despesas__rotulo">Total do mês</span>
+                <strong>{formatarMoeda(r.valor_total)}</strong>
+                <span>
+                  {r.quantidade} {r.quantidade === 1 ? 'despesa' : 'despesas'}
+                </span>
+              </div>
+            )}
+          </header>
+
+          {resumo.erro && (
+            <p className="alerta alerta--erro" role="alert">
+              {resumo.erro}
+            </p>
           )}
-        </header>
+          {r &&
+            (r.quantidade === 0 ? (
+              <p className="vazio">Nenhuma despesa registrada neste mês.</p>
+            ) : (
+              <BarrasTotais
+                rotulo="Despesas por categoria"
+                mostrarPercentual
+                itens={r.por_categoria.map((c) => ({
+                  chave: String(c.categoria?.id ?? 'sem'),
+                  nome: c.categoria?.nome ?? 'Sem categoria',
+                  valor: c.valor_total,
+                }))}
+              />
+            ))}
 
-        {resumo.erro && (
-          <p className="alerta alerta--erro" role="alert">
-            {resumo.erro}
-          </p>
-        )}
-        {r &&
-          (r.quantidade === 0 ? (
-            <p className="vazio">Nenhuma despesa registrada neste mês.</p>
-          ) : (
-            <BarrasTotais
-              rotulo="Despesas por categoria"
-              mostrarPercentual
-              itens={r.por_categoria.map((c) => ({
-                chave: String(c.categoria?.id ?? 'sem'),
-                nome: c.categoria?.nome ?? 'Sem categoria',
-                valor: c.valor_total,
-              }))}
-            />
-          ))}
+          <footer className="painel-despesas__rodape">
+            <button type="button" className="link" onClick={() => irPara('despesas')}>
+              Ver todas as despesas
+            </button>
+          </footer>
+        </section>
 
-        <footer className="painel-despesas__rodape">
-          <button type="button" className="link" onClick={() => irPara('despesas')}>
-            Ver todas as despesas
-          </button>
-        </footer>
-      </section>
+        <ProximasContas
+          onPagamento={() => {
+            // Pagar gera uma despesa: vencimentos e total do mês mudam.
+            alertas.recarregar()
+            resumo.recarregar()
+          }}
+          onVerTodas={() => irPara('contas')}
+        />
+      </div>
     </div>
   )
 }

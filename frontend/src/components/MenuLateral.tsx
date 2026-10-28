@@ -1,6 +1,10 @@
 import type { Restaurante, Usuario } from '../api'
+import { useArea } from '../contexto'
+import { useCarregar } from '../hooks/useCarregar'
 import { PAGINAS, type Pagina } from '../hooks/useNavegacao'
 import type { StatusSistema } from '../hooks/useStatusSistema'
+import { listarDocumentos } from '../recursos/documentos'
+import { buscarAlertas } from '../recursos/financeiro'
 import { formatarDocumento } from '../utils/formato'
 import { BotaoTema, type ControleTema } from './BotaoTema'
 import { Icone } from './Icone'
@@ -15,6 +19,34 @@ const GRUPOS: { titulo: string; paginas: Pagina[] }[] = [
 ]
 
 const PAPEIS = { proprietario: 'Proprietário', membro: 'Membro' } as const
+
+interface Aviso {
+  quantidade: number
+  nivel: 'erro' | 'alerta'
+}
+
+/**
+ * O que precisa de atenção, mostrado ao lado do item do menu: contas vencidas ou que vencem hoje,
+ * e documentos esperando conferência. Recarrega a cada troca de tela (a página atual entra na chave).
+ */
+function useAvisos(pagina: Pagina): Partial<Record<Pagina, Aviso>> {
+  const { restaurante } = useArea()
+  const alertas = useCarregar(`menu-alertas-${restaurante.id}-${pagina}`, () => buscarAlertas(restaurante.id))
+  const documentos = useCarregar(`menu-documentos-${restaurante.id}-${pagina}`, () =>
+    listarDocumentos(restaurante.id, null),
+  )
+  const avisos: Partial<Record<Pagina, Aviso>> = {}
+  const a = alertas.dados
+  if (a && a.vencidas.quantidade + a.vencem_hoje.quantidade > 0) {
+    avisos.contas = {
+      quantidade: a.vencidas.quantidade + a.vencem_hoje.quantidade,
+      nivel: a.vencidas.quantidade > 0 ? 'erro' : 'alerta',
+    }
+  }
+  const aConferir = documentos.dados?.filter((d) => d.status === 'pendente' || d.status === 'erro').length ?? 0
+  if (aConferir > 0) avisos.documentos = { quantidade: aConferir, nivel: 'alerta' }
+  return avisos
+}
 
 function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/)
@@ -49,6 +81,8 @@ export function MenuLateral({
   aberto,
   onFechar,
 }: MenuLateralProps) {
+  const avisos = useAvisos(pagina)
+
   return (
     <aside id="menu-lateral" className={`menu-lateral${aberto ? ' menu-lateral--aberto' : ''}`} aria-label="Menu">
       <div className="menu-lateral__marca">
@@ -110,6 +144,15 @@ export function MenuLateral({
                   >
                     <Icone nome={chave} />
                     <span>{PAGINAS[chave]}</span>
+                    {avisos[chave] && (
+                      <span className={`menu-lateral__contador menu-lateral__contador--${avisos[chave].nivel}`}>
+                        <span aria-hidden="true">{avisos[chave].quantidade}</span>
+                        <span className="visualmente-oculto">
+                          , {avisos[chave].quantidade} {avisos[chave].quantidade === 1 ? 'precisa' : 'precisam'} de
+                          atenção
+                        </span>
+                      </span>
+                    )}
                   </a>
                 </li>
               ))}

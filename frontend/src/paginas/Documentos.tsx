@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { ApiError } from '../api'
 import { DetalheDocumento } from '../components/DetalheDocumento'
+import { Icone } from '../components/Icone'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
 import {
@@ -32,6 +33,7 @@ export function Documentos() {
   const [enviando, setEnviando] = useState(false)
   const [aviso, setAviso] = useState<{ tipo: 'erro' | 'ok'; texto: string } | null>(null)
   const campoArquivo = useRef<HTMLInputElement>(null)
+  const campoCamera = useRef<HTMLInputElement>(null)
 
   const lista = useCarregar(`${restaurante.id}|${aba}`, () =>
     listarDocumentos(restaurante.id, aba === 'todos' ? null : aba),
@@ -81,7 +83,26 @@ export function Documentos() {
     <section className="pagina-secao" aria-labelledby="titulo-documentos">
       <header className="pagina-secao__cabecalho">
         <h2 id="titulo-documentos">Documentos</h2>
-        <div>
+        <div className="documentos__envio">
+          {/* No celular, abre direto a câmera traseira (a foto chega como JPG, formato aceito). */}
+          <input
+            ref={campoCamera}
+            type="file"
+            accept="image/jpeg,image/png"
+            capture="environment"
+            className="visualmente-oculto"
+            aria-label="Fotografar nota ou boleto"
+            onChange={(e) => void aoEscolherArquivos(e)}
+          />
+          <button
+            type="button"
+            className="botao botao--secundario so-celular"
+            disabled={enviando}
+            onClick={() => campoCamera.current?.click()}
+          >
+            <Icone nome="camera" tamanho={18} />
+            Fotografar nota
+          </button>
           <input
             ref={campoArquivo}
             type="file"

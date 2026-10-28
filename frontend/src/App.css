@@ -2161,3 +2161,152 @@ background: var(--cor-superficie-suave);
     text-align: left;
   }
 }
+
+/* Envio de documentos: no celular aparece também "Fotografar nota", que abre a câmera. */
+.documentos__envio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-3);
+}
+
+/* Só em telas de toque (celular, tablet): no computador o botão de enviar arquivos já basta. */
+.so-celular {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .so-celular {
+    display: inline-flex;
+  }
+}
+
+/* Início em duas colunas: despesas do mês (maior) e próximas contas ao lado. */
+.inicio__colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+  align-items: start;
+  gap: var(--espaco-5);
+}
+
+@media (max-width: 1100px) {
+  .inicio__colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.botao--pequeno {
+  min-height: 32px;
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+}
+
+.proximas-contas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+  padding: var(--espaco-6);
+}
+
+.proximas-contas__lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Descrição e data | valor | ação; a confirmação ocupa a linha de baixo inteira. */
+.proximas-contas__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--espaco-2) var(--espaco-3);
+  padding: var(--espaco-3) 0;
+  border-top: var(--borda);
+}
+
+.proximas-contas__item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.proximas-contas__info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Até duas linhas: em colunas estreitas, uma linha só cortava a descrição cedo demais. */
+.proximas-contas__descricao {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-weight: var(--peso-forte);
+  line-height: 1.3;
+}
+
+.proximas-contas__data {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-2);
+  font-size: 0.8125rem;
+  color: var(--cor-texto-suave);
+}
+
+.proximas-contas__data .situacao {
+  padding: 1px 8px;
+  font-size: var(--texto-xs);
+}
+
+.proximas-contas__valor {
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.proximas-contas__confirmar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espaco-3);
+  padding: var(--espaco-2) var(--espaco-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-secundaria-fundo);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+}
+
+@media (max-width: 640px) {
+  .proximas-contas {
+    padding: var(--espaco-4);
+  }
+}
+
+/* Contador no item do menu: quantas coisas pedem atenção (vermelho se há conta vencida). */
+.menu-lateral__contador {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: var(--raio-pilula);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-titulo);
+  font-variant-numeric: tabular-nums;
+}
+
+.menu-lateral__contador--erro {
+  background: var(--cor-erro-forte);
+  color: #ffffff;
+}
+
+.menu-lateral__contador--alerta {
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+}

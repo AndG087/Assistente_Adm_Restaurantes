@@ -248,6 +248,29 @@ describe('Barra lateral', () => {
     )
   })
 
+  it('mostra contadores do que precisa de atenção', async () => {
+    simularBackend({
+      ...LOGADO,
+      'GET /api/restaurantes/*/contas-a-pagar/alertas': () =>
+        json({
+          hoje: '2026-10-20',
+          dias: 7,
+          vencidas: { quantidade: 2, valor_total: '1' },
+          vencem_hoje: { quantidade: 1, valor_total: '1' },
+          proximos_dias: { quantidade: 4, valor_total: '1' },
+        }),
+      'GET /api/restaurantes/*/documentos': () =>
+        json([{ id: 1, status: 'pendente' }, { id: 2, status: 'erro' }, { id: 3, status: 'concluido' }]),
+    })
+    render(<App />)
+
+    const menu = await screen.findByRole('navigation', { name: 'Seções' })
+    // Vencidas + vencem hoje (os próximos 7 dias ainda não pedem atenção).
+    expect(await within(menu).findByRole('link', { name: /^Contas a pagar\W+3 precisam de atenção$/ })).toBeInTheDocument()
+    // Pendentes + com erro de leitura; os conferidos não contam.
+    expect(within(menu).getByRole('link', { name: /^Documentos\W+2 precisam de atenção$/ })).toBeInTheDocument()
+  })
+
   it('no celular, o menu abre pelo botão e fecha com Esc ou ao escolher uma tela', async () => {
     simularBackend(LOGADO)
     render(<App />)

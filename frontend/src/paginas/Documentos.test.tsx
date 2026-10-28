@@ -54,6 +54,29 @@ describe('Documentos', () => {
     )
   })
 
+  it('no celular, fotografa a nota com a câmera traseira e envia a foto', async () => {
+    const fetchFalso = simularBackend({
+      ...CONFERENCIA,
+      'GET /api/restaurantes/10/documentos': () => json([]),
+      'POST /api/restaurantes/10/documentos': () =>
+        json(documento({ nome_original: 'foto.jpg', tipo_mime: 'image/jpeg' }), 201),
+      'GET /api/restaurantes/10/documentos/1': () =>
+        json(documento({ nome_original: 'foto.jpg', tipo_mime: 'image/jpeg' })),
+    })
+    renderizarNaArea(<Documentos />)
+    await screen.findByText('Nenhum documento nesta situação.')
+
+    const camera = screen.getByLabelText('Fotografar nota ou boleto')
+    expect(camera).toHaveAttribute('capture', 'environment')
+    expect(camera).toHaveAttribute('accept', 'image/jpeg,image/png')
+    expect(screen.getByRole('button', { name: 'Fotografar nota' })).toBeInTheDocument()
+
+    await userEvent.upload(camera, new File(['\xff\xd8\xff'], 'foto.jpg', { type: 'image/jpeg' }))
+
+    expect(await screen.findByRole('heading', { name: 'foto.jpg' })).toBeInTheDocument()
+    expect(chamadas(fetchFalso, 'POST', '/api/restaurantes/10/documentos')).toHaveLength(1)
+  })
+
   it('envia o arquivo como formulário e abre o documento enviado', async () => {
     const fetchFalso = simularBackend({
       ...CONFERENCIA,
