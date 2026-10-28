@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
-import { listarCategorias, listarFornecedores } from '../recursos/cadastros'
+import { listarCategorias, listarFornecedores, sugerirCategoria } from '../recursos/cadastros'
 import type { DadosLancamento, Referencia } from '../recursos/financeiro'
 import { hojeIso, valorParaApi, valorParaCampo } from '../utils/formato'
 
@@ -49,6 +49,9 @@ export function FormLancamento({
   const [observacoes, setObservacoes] = useState(inicial?.observacoes ?? '')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [sugerindo, setSugerindo] = useState(false)
+  // Explicação da última sugestão (de onde veio), exibida abaixo da categoria.
+  const [dica, setDica] = useState<string | null>(null)
 
   const opcoes = useCarregar(`opcoes-${restaurante.id}`, async () => {
     const [categorias, fornecedores] = await Promise.all([
@@ -64,6 +67,20 @@ export function FormLancamento({
   }
   const categorias = comAtual(opcoes.dados?.categorias ?? [], inicial?.categoria)
   const fornecedores = comAtual(opcoes.dados?.fornecedores ?? [], inicial?.fornecedor)
+
+  async function sugerir() {
+    setSugerindo(true)
+    setDica(null)
+    try {
+      const sugestao = await sugerirCategoria(restaurante.id, descricao.trim(), fornecedorId)
+      if (sugestao.categoria) setCategoriaId(sugestao.categoria.id)
+      setDica(sugestao.mensagem)
+    } catch (e) {
+      setDica(mensagemDeErro(e))
+    } finally {
+      setSugerindo(false)
+    }
+  }
 
   async function aoSubmeter(evento: FormEvent) {
     evento.preventDefault()
@@ -137,21 +154,44 @@ export function FormLancamento({
           />
         </label>
 
-        <label className="campo">
-          <span className="campo__rotulo">Categoria</span>
-          <select
-            className="campo__entrada"
-            value={categoriaId ?? ''}
-            onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">Sem categoria</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="campo">
+          <label htmlFor="lancamento-categoria" className="campo__rotulo">
+            Categoria
+          </label>
+          <div className="campo__com-botao">
+            <select
+              id="lancamento-categoria"
+              className="campo__entrada"
+              value={categoriaId ?? ''}
+              onChange={(e) => {
+                setCategoriaId(e.target.value ? Number(e.target.value) : null)
+                setDica(null)
+              }}
+              aria-describedby={dica ? 'lancamento-categoria-dica' : undefined}
+            >
+              <option value="">Sem categoria</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="botao botao--secundario"
+              disabled={sugerindo || descricao.trim().length < 2}
+              onClick={() => void sugerir()}
+              title="Sugere pela descrição e pelo histórico do fornecedor"
+            >
+              {sugerindo ? 'Sugerindo…' : 'Sugerir'}
+            </button>
+          </div>
+          {dica && (
+            <span id="lancamento-categoria-dica" className="campo__ajuda" role="status">
+              {dica}
+            </span>
+          )}
+        </div>
 
         <label className="campo">
           <span className="campo__rotulo">Fornecedor</span>

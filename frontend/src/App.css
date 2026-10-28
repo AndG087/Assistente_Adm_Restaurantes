@@ -189,6 +189,16 @@
   outline-offset: 1px;
 }
 
+.campo__com-botao {
+  display: flex;
+  gap: 8px;
+}
+
+.campo__com-botao .campo__entrada {
+  flex: 1;
+  min-width: 0;
+}
+
 .campo--em-linha {
   flex-direction: row;
   align-items: center;

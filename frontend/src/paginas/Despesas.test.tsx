@@ -146,4 +146,45 @@ describe('Despesas', () => {
 
     await waitFor(() => expect(sessaoExpirou).toHaveBeenCalled())
   })
+
+  it('sugere a categoria pela descrição e explica a origem', async () => {
+    const fetchFalso = simularBackend({
+      ...OPCOES,
+      'GET /api/restaurantes/10/despesas': () => json({ itens: [], total: 0, valor_total: '0.00' }),
+      'POST /api/restaurantes/10/sugestoes/categoria': () =>
+        json({ categoria: { id: 4, nome: 'Bebidas' }, origem: 'palavra_chave', mensagem: 'Reconhecida pela palavra “Cerveja”.' }),
+    })
+    renderizarNaArea(<Despesas />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Nova despesa' }))
+
+    const sugerir = screen.getByRole('button', { name: 'Sugerir' })
+    expect(sugerir).toBeDisabled()
+    await userEvent.type(screen.getByLabelText('Descrição'), 'Cerveja lata')
+    await userEvent.selectOptions(await screen.findByLabelText('Fornecedor'), 'Hortifruti Verde')
+    await userEvent.click(sugerir)
+
+    await waitFor(() => expect(screen.getByLabelText('Categoria')).toHaveDisplayValue('Bebidas'))
+    expect(screen.getByRole('status')).toHaveTextContent('Reconhecida pela palavra “Cerveja”.')
+    expect(corpoEnviado(chamadas(fetchFalso, 'POST', '/api/restaurantes/10/sugestoes/categoria')[0])).toEqual({
+      descricao: 'Cerveja lata',
+      fornecedor_id: 7,
+    })
+  })
+
+  it('sem sugestão, mantém a categoria e mostra o motivo', async () => {
+    simularBackend({
+      ...OPCOES,
+      'GET /api/restaurantes/10/despesas': () => json({ itens: [], total: 0, valor_total: '0.00' }),
+      'POST /api/restaurantes/10/sugestoes/categoria': () =>
+        json({ categoria: null, origem: null, mensagem: 'A IA local não está disponível agora. Escolha a categoria manualmente.' }),
+    })
+    renderizarNaArea(<Despesas />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Nova despesa' }))
+
+    await userEvent.type(screen.getByLabelText('Descrição'), 'Item diverso')
+    await userEvent.click(screen.getByRole('button', { name: 'Sugerir' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('A IA local não está disponível agora')
+    expect(screen.getByLabelText('Categoria')).toHaveDisplayValue('Sem categoria')
+  })
 })

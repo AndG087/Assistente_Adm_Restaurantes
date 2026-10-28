@@ -22,6 +22,9 @@ class FakeOllamaService:
         self.resposta = "Olá! Como posso ajudar?"
         self.erro: Exception | None = None
         self.mensagens_recebidas: list[str] = []
+        # Respostas de gerar_json, consumidas em ordem (a última se repete).
+        self.respostas_json: list[dict] = [{}]
+        self.pedidos_json: list[dict] = []
 
     async def status(self) -> StatusOllama:
         return self.status_atual
@@ -31,6 +34,12 @@ class FakeOllamaService:
         if self.erro is not None:
             raise self.erro
         return self.resposta
+
+    async def gerar_json(self, sistema: str, usuario: str, esquema: dict) -> dict:
+        self.pedidos_json.append({"sistema": sistema, "usuario": usuario, "esquema": esquema})
+        if self.erro is not None:
+            raise self.erro
+        return self.respostas_json.pop(0) if len(self.respostas_json) > 1 else self.respostas_json[0]
 
 
 @pytest.fixture(scope="session")

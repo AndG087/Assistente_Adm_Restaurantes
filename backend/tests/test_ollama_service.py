@@ -183,6 +183,33 @@ async def test_conversar_rejeita_resposta_invalida(resposta):
         await criar_servico(lambda req: resposta).conversar("Oi")
 
 
+async def test_gerar_json_envia_o_esquema_e_le_a_resposta():
+    recebido = {}
+    esquema = {"type": "object", "properties": {"categoria": {"type": "string", "enum": ["Gás", "Nenhuma"]}}}
+
+    def handler(req):
+        recebido["corpo"] = json.loads(req.content)
+        return httpx.Response(200, json={"message": {"content": '{"categoria": "Gás"}'}})
+
+    resultado = await criar_servico(handler).gerar_json("sistema", "usuário", esquema)
+
+    assert resultado == {"categoria": "Gás"}
+    assert recebido["corpo"]["format"] == esquema
+    assert recebido["corpo"]["options"] == {"temperature": 0}
+    assert recebido["corpo"]["messages"] == [
+        {"role": "system", "content": "sistema"},
+        {"role": "user", "content": "usuário"},
+    ]
+
+
+@pytest.mark.parametrize("conteudo", ["não é json", "[1, 2]", '"texto"'])
+async def test_gerar_json_rejeita_resposta_que_nao_e_objeto(conteudo):
+    servico = criar_servico(lambda req: httpx.Response(200, json={"message": {"content": conteudo}}))
+
+    with pytest.raises(OllamaError):
+        await servico.gerar_json("s", "u", {})
+
+
 async def test_falha_no_chat_invalida_cache_de_status():
     chamadas_tags = []
     ollama_ligado = True

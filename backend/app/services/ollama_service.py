@@ -4,11 +4,13 @@ Este é o único ponto do sistema que conversa com o modelo de linguagem.
 Usa a API local oficial: https://docs.ollama.com/api
 """
 
+import json
 import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Any
 
 import httpx
 
@@ -121,14 +123,40 @@ class OllamaService:
 
         Lança uma subclasse de OllamaError em caso de falha; nunca devolve uma resposta inventada.
         """
-        corpo = {
-            "model": self.modelo,
-            "messages": [
-                {"role": "system", "content": PROMPT_DO_SISTEMA},
-                {"role": "user", "content": mensagem},
-            ],
-            "stream": False,
-        }
+        return await self._chat([
+            {"role": "system", "content": PROMPT_DO_SISTEMA},
+            {"role": "user", "content": mensagem},
+        ])
+
+    async def gerar_json(self, sistema: str, usuario: str, esquema: dict[str, Any]) -> dict[str, Any]:
+        """Pede uma resposta no formato do JSON Schema informado (saída estruturada do Ollama).
+
+        Quem chama deve validar o resultado: o esquema reduz, mas não elimina, respostas inesperadas.
+        """
+        texto = await self._chat(
+            [{"role": "system", "content": sistema}, {"role": "user", "content": usuario}],
+            formato=esquema,
+            opcoes={"temperature": 0},  # respostas estáveis para classificação
+        )
+        try:
+            resultado = json.loads(texto)
+        except ValueError as erro:
+            raise OllamaError("O modelo não respondeu no formato esperado.") from erro
+        if not isinstance(resultado, dict):
+            raise OllamaError("O modelo não respondeu no formato esperado.")
+        return resultado
+
+    async def _chat(
+        self,
+        mensagens: list[dict[str, str]],
+        formato: dict[str, Any] | None = None,
+        opcoes: dict[str, Any] | None = None,
+    ) -> str:
+        corpo: dict[str, Any] = {"model": self.modelo, "messages": mensagens, "stream": False}
+        if formato is not None:
+            corpo["format"] = formato
+        if opcoes is not None:
+            corpo["options"] = opcoes
         try:
             async with self._cliente(self._timeout) as cliente:
                 resposta = await cliente.post("/api/chat", json=corpo)

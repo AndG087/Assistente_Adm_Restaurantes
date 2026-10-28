@@ -42,6 +42,23 @@ export function criarCategoria(restauranteId: number, nome: string): Promise<Cat
   return requisitar(`${base(restauranteId)}/categorias`, enviarJson('POST', { nome }))
 }
 
+export interface SugestaoCategoria {
+  categoria: { id: number; nome: string } | null
+  origem: 'palavra_chave' | 'historico' | 'ia' | null
+  mensagem: string
+}
+
+export function sugerirCategoria(
+  restauranteId: number,
+  descricao: string,
+  fornecedorId: number | null,
+): Promise<SugestaoCategoria> {
+  return requisitar(
+    `${base(restauranteId)}/sugestoes/categoria`,
+    enviarJson('POST', { descricao, fornecedor_id: fornecedorId }),
+  )
+}
+
 export function atualizarCategoria(restauranteId: number, id: number, nome: string, ativo: boolean): Promise<Categoria> {
   return requisitar(`${base(restauranteId)}/categorias/${id}`, enviarJson('PUT', { nome, ativo }))
 }
