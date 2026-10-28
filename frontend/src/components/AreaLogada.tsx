@@ -4,6 +4,7 @@ import { AreaContext } from '../contexto'
 import { useNavegacao, type Pagina } from '../hooks/useNavegacao'
 import { useRestaurantes } from '../hooks/useRestaurantes'
 import type { StatusSistema } from '../hooks/useStatusSistema'
+import type { ControleTema } from './BotaoTema'
 import { Categorias } from '../paginas/Categorias'
 import { ContasPagar } from '../paginas/ContasPagar'
 import { Despesas } from '../paginas/Despesas'
@@ -22,11 +23,12 @@ import { MenuLateral } from './MenuLateral'
 interface AreaLogadaProps {
   usuario: Usuario
   status: StatusSistema
+  tema: ControleTema
   onSair: () => void
   onSessaoExpirada: () => void
 }
 
-export function AreaLogada({ usuario, status, onSair, onSessaoExpirada }: AreaLogadaProps) {
+export function AreaLogada({ usuario, status, tema, onSair, onSessaoExpirada }: AreaLogadaProps) {
   const restaurantes = useRestaurantes()
   const { pagina, irPara } = useNavegacao()
   const [criandoOutro, setCriandoOutro] = useState(false)
@@ -60,7 +62,7 @@ export function AreaLogada({ usuario, status, onSair, onSessaoExpirada }: AreaLo
   // Telas sem restaurante escolhido: topo simples, sem barra lateral.
   const semMenu = (conteudo: ReactNode) => (
     <>
-      <Cabecalho status={status} usuario={usuario} onSair={onSair} />
+      <Cabecalho status={status} tema={tema} usuario={usuario} onSair={onSair} />
       <main className="conteudo">{conteudo}</main>
       <Rodape />
     </>
@@ -168,6 +170,7 @@ export function AreaLogada({ usuario, status, onSair, onSessaoExpirada }: AreaLo
           }}
           usuario={usuario}
           status={status}
+          tema={tema}
           onSair={onSair}
           aberto={menuAberto}
           onFechar={() => setMenuAberto(false)}

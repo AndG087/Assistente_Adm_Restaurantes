@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { BarrasTotais } from '../components/BarrasTotais'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
@@ -27,7 +28,8 @@ export function Inicio({ irPara }: InicioProps) {
   )
 
   const a = alertas.dados
-  const agora = new Date()
+  // Lida uma vez, ao abrir a tela: a saudação não precisa mudar a cada novo desenho.
+  const [agora] = useState(() => new Date())
 
   return (
     <div className="inicio">

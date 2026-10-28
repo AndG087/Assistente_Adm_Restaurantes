@@ -5,6 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Caderninho · as contas do restaurante em dia</title>
+    <script>
+      // Aplica o tema escolhido antes de a página aparecer (a mesma chave do hook useTema).
+      try {
+        if (localStorage.getItem('caderninho-tema') === 'escuro') document.documentElement.dataset.tema = 'escuro'
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

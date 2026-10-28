@@ -2,6 +2,7 @@ import type { Restaurante, Usuario } from '../api'
 import { PAGINAS, type Pagina } from '../hooks/useNavegacao'
 import type { StatusSistema } from '../hooks/useStatusSistema'
 import { formatarDocumento } from '../utils/formato'
+import { BotaoTema, type ControleTema } from './BotaoTema'
 import { Icone } from './Icone'
 import { IndicadorStatus } from './IndicadorStatus'
 import { Logo } from './Logo'
@@ -28,6 +29,7 @@ interface MenuLateralProps {
   onNovoRestaurante: () => void
   usuario: Usuario
   status: StatusSistema
+  tema: ControleTema
   onSair: () => void
   /** No celular o menu é uma gaveta: aberto/fechado. Na tela grande ele está sempre visível. */
   aberto: boolean
@@ -42,6 +44,7 @@ export function MenuLateral({
   onNovoRestaurante,
   usuario,
   status,
+  tema,
   onSair,
   aberto,
   onFechar,
@@ -116,7 +119,10 @@ export function MenuLateral({
       </nav>
 
       <div className="menu-lateral__rodape">
-        <IndicadorStatus status={status} />
+        <div className="menu-lateral__ajustes">
+          <IndicadorStatus status={status} />
+          <BotaoTema {...tema} />
+        </div>
         <div className="menu-lateral__usuario">
           <span className="avatar" aria-hidden="true">
             {iniciais(usuario.nome)}

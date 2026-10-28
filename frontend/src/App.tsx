@@ -5,10 +5,12 @@ import { Cabecalho, Rodape } from './components/Cabecalho'
 import { TelaAcesso } from './components/TelaAcesso'
 import { useSessao } from './hooks/useSessao'
 import { useStatusSistema } from './hooks/useStatusSistema'
+import { useTema } from './hooks/useTema'
 
 function App() {
   const status = useStatusSistema()
   const sessao = useSessao()
+  const tema = useTema()
   const usuarioId = sessao.usuario?.id
   const { atualizar: atualizarStatus } = status
 
@@ -27,6 +29,7 @@ function App() {
         key={sessao.usuario.id}
         usuario={sessao.usuario}
         status={status}
+        tema={tema}
         onSair={sair}
         onSessaoExpirada={sessao.sessaoExpirou}
       />
@@ -34,7 +37,7 @@ function App() {
   } else {
     tela = (
       <>
-        <Cabecalho status={status} usuario={null} onSair={sair} />
+        <Cabecalho status={status} tema={tema} usuario={null} onSair={sair} />
         <main className="conteudo">
           {sessao.verificando ? <p className="carregando-pagina">Carregando…</p> : <TelaAcesso sessao={sessao} />}
         </main>

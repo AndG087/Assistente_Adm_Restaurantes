@@ -1,16 +1,18 @@
 import type { Usuario } from '../api'
 import type { StatusSistema } from '../hooks/useStatusSistema'
+import { BotaoTema, type ControleTema } from './BotaoTema'
 import { IndicadorStatus } from './IndicadorStatus'
 import { Logo } from './Logo'
 
 interface CabecalhoProps {
   status: StatusSistema
+  tema: ControleTema
   usuario: Usuario | null
   onSair: () => void
 }
 
 /** Topo das telas sem barra lateral: login e cadastro do primeiro restaurante. */
-export function Cabecalho({ status, usuario, onSair }: CabecalhoProps) {
+export function Cabecalho({ status, tema, usuario, onSair }: CabecalhoProps) {
   return (
     <header className="cabecalho">
       <div className="cabecalho__marca">
@@ -23,6 +25,7 @@ export function Cabecalho({ status, usuario, onSair }: CabecalhoProps) {
 
       <div className="cabecalho__status">
         <IndicadorStatus status={status} />
+        <BotaoTema {...tema} />
       </div>
 
       {usuario && (

@@ -56,6 +56,41 @@ beforeEach(() => {
   } catch {
     // ambiente sem localStorage
   }
+  delete document.documentElement.dataset.tema
+})
+
+describe('Tema', () => {
+  it('abre no claro e troca para o escuro, lembrando a escolha', async () => {
+    simularBackend(NAO_LOGADO)
+    render(<App />)
+
+    expect(document.documentElement.dataset.tema).toBeUndefined()
+    await userEvent.click(await screen.findByRole('button', { name: 'Tema escuro' }))
+
+    expect(document.documentElement.dataset.tema).toBe('escuro')
+    expect(localStorage.getItem('caderninho-tema')).toBe('escuro')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tema claro' }))
+    expect(document.documentElement.dataset.tema).toBeUndefined()
+    expect(localStorage.getItem('caderninho-tema')).toBe('claro')
+  })
+
+  it('reabre no tema escolhido da última vez', async () => {
+    localStorage.setItem('caderninho-tema', 'escuro')
+    simularBackend(NAO_LOGADO)
+    render(<App />)
+
+    expect(await screen.findByRole('button', { name: 'Tema claro' })).toBeInTheDocument()
+    expect(document.documentElement.dataset.tema).toBe('escuro')
+  })
+
+  it('também está na barra lateral', async () => {
+    simularBackend(LOGADO)
+    render(<App />)
+
+    const menu = await screen.findByRole('complementary', { name: 'Menu' })
+    expect(within(menu).getByRole('button', { name: 'Tema escuro' })).toBeInTheDocument()
+  })
 })
 
 describe('Acesso', () => {

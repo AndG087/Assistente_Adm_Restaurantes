@@ -401,8 +401,8 @@
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  max-width: 1180px;
-  margin: 0 auto;
+  /* Encostado na barra lateral: em monitores largos, centralizar deixava um vão vazio entre os dois. */
+  max-width: 1280px;
   padding: 32px 40px 16px;
 }
 
@@ -562,6 +562,39 @@
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--cor-borda);
+}
+
+.menu-lateral__ajustes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Troca de tema: discreto, no pé da barra lateral e no topo da tela de entrada. */
+.botao-tema {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--raio-pequeno);
+  background: transparent;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.botao-tema:hover {
+  border-color: var(--cor-borda);
+  color: var(--cor-texto);
+}
+
+.botao-tema:focus-visible {
+  outline: 2px solid var(--cor-secundaria);
+  outline-offset: 2px;
 }
 
 .menu-lateral__usuario {

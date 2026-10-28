@@ -41,7 +41,7 @@
   --sombra: 0 1px 2px rgb(60 45 20 / 6%), 0 4px 16px rgb(60 45 20 / 7%);
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: var(--fonte);
   font-size: 16px;
   line-height: 1.5;
@@ -50,37 +50,38 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --cor-fundo: #12161c;
-    --cor-superficie: #1a1f27;
-    --cor-superficie-suave: #1f252e;
-    --cor-borda: #2e3642;
-    --cor-texto: #ece7dd;
-    --cor-texto-suave: #aaa396;
-    --cor-primaria: #8db4f2;
-    --cor-primaria-hover: #b2cdf8;
-    --cor-primaria-contraste: #0d1a2e;
-    --cor-primaria-fundo: #1d2b42;
-    --cor-secundaria: #3d8bf3;
-    --cor-secundaria-texto: #7db2f8;
-    --cor-secundaria-fundo: #172c48;
-    --cor-margem: #f07878;
-    --cor-mensagem-usuario: #2a4570;
-    --cor-mensagem-usuario-texto: #eef4ff;
-    --cor-mensagem-ia: #232a34;
+/* Tema escuro: ligado pelo botão "Tema escuro" (atributo data-tema no <html>), e não pelo
+   tema do sistema. Assim a demonstração abre igual para todo mundo, no claro. */
+:root[data-tema='escuro'] {
+  color-scheme: dark;
+  --cor-fundo: #12161c;
+  --cor-superficie: #1a1f27;
+  --cor-superficie-suave: #1f252e;
+  --cor-borda: #2e3642;
+  --cor-texto: #ece7dd;
+  --cor-texto-suave: #aaa396;
+  --cor-primaria: #8db4f2;
+  --cor-primaria-hover: #b2cdf8;
+  --cor-primaria-contraste: #0d1a2e;
+  --cor-primaria-fundo: #1d2b42;
+  --cor-secundaria: #3d8bf3;
+  --cor-secundaria-texto: #7db2f8;
+  --cor-secundaria-fundo: #172c48;
+  --cor-margem: #f07878;
+  --cor-mensagem-usuario: #2a4570;
+  --cor-mensagem-usuario-texto: #eef4ff;
+  --cor-mensagem-ia: #232a34;
 
-    --cor-ok: #4ade80;
-    --cor-ok-fundo: #12291b;
-    --cor-alerta: #fbbf24;
-    --cor-alerta-fundo: #2e2410;
-    --cor-erro: #f87171;
-    --cor-erro-fundo: #321616;
-    --cor-neutra: #a8a194;
-    --cor-neutra-fundo: #232a34;
+  --cor-ok: #4ade80;
+  --cor-ok-fundo: #12291b;
+  --cor-alerta: #fbbf24;
+  --cor-alerta-fundo: #2e2410;
+  --cor-erro: #f87171;
+  --cor-erro-fundo: #321616;
+  --cor-neutra: #a8a194;
+  --cor-neutra-fundo: #232a34;
 
-    --sombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
-  }
+  --sombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
 }
 
 *,
