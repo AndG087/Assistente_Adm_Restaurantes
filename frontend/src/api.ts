@@ -33,11 +33,14 @@ export interface Restaurante {
 
 export class ApiError extends Error {
   readonly status: number | null
+  // Dados extras que o backend enviou junto com o erro (ex.: id do documento repetido).
+  readonly detalhes: Record<string, unknown> | null
 
-  constructor(mensagem: string, status: number | null) {
+  constructor(mensagem: string, status: number | null, detalhes: Record<string, unknown> | null = null) {
     super(mensagem)
     this.name = 'ApiError'
     this.status = status
+    this.detalhes = detalhes
   }
 }
 
@@ -60,16 +63,19 @@ export function enviarJson(metodo: 'POST' | 'PUT', corpo: unknown): RequestInit 
 export async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
   let resposta: Response
   try {
+    // Corpo em texto é JSON; em FormData (envio de arquivo), o navegador define o Content-Type sozinho.
+    const ehJson = typeof init?.body === 'string'
     resposta = await fetch(caminho, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers: { ...(ehJson ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
     })
   } catch {
     throw new ApiError('Não foi possível conectar ao backend. Verifique se ele está em execução.', null)
   }
 
   if (!resposta.ok) {
-    throw new ApiError(await mensagemDeErro(resposta), resposta.status)
+    const [mensagem, detalhes] = await mensagemDeErro(resposta)
+    throw new ApiError(mensagem, resposta.status, detalhes)
   }
   if (resposta.status === 204) {
     return undefined as T
@@ -77,26 +83,31 @@ export async function requisitar<T>(caminho: string, init?: RequestInit): Promis
   return (await resposta.json()) as T
 }
 
-async function mensagemDeErro(resposta: Response): Promise<string> {
+async function mensagemDeErro(resposta: Response): Promise<[string, Record<string, unknown> | null]> {
   try {
     const corpo: unknown = await resposta.json()
     if (corpo && typeof corpo === 'object' && 'detail' in corpo) {
-      if (typeof corpo.detail === 'string') return corpo.detail
+      const { detail } = corpo
+      if (typeof detail === 'string') return [detail, null]
       // Erro de validação do FastAPI: lista com uma mensagem por campo.
-      if (resposta.status === 422 && Array.isArray(corpo.detail)) {
-        return mensagemDeValidacao(corpo.detail)
+      if (resposta.status === 422 && Array.isArray(detail)) {
+        return [mensagemDeValidacao(detail), null]
+      }
+      // Erro com dados extras: { mensagem: "...", ... }
+      if (detail && typeof detail === 'object' && 'mensagem' in detail && typeof detail.mensagem === 'string') {
+        return [detail.mensagem, detail as Record<string, unknown>]
       }
     }
   } catch {
     // Corpo sem JSON (ex.: proxy sem backend): cai na mensagem genérica abaixo.
   }
   if (resposta.status >= 500) {
-    return 'O backend não respondeu corretamente. Verifique se ele está em execução.'
+    return ['O backend não respondeu corretamente. Verifique se ele está em execução.', null]
   }
   if (resposta.status === 422) {
-    return 'Os dados enviados são inválidos. Verifique e tente novamente.'
+    return ['Os dados enviados são inválidos. Verifique e tente novamente.', null]
   }
-  return `Erro inesperado (HTTP ${resposta.status}).`
+  return [`Erro inesperado (HTTP ${resposta.status}).`, null]
 }
 
 const NOMES_DOS_CAMPOS: Record<string, string> = {

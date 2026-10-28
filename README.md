@@ -127,6 +127,23 @@ O sistema inicia sem o Ollama; só o chat depende dele. O modelo **nunca** é ba
 
 Para usar outro modelo, baixe-o e altere `OLLAMA_MODEL` no `backend\.env`.
 
+### 5. OCR para fotos e PDFs escaneados (Tesseract)
+
+PDFs gerados por sistema (como o DANFE) são lidos sem OCR. Para fotos e documentos escaneados:
+
+```powershell
+winget install --id UB-Mannheim.TesseractOCR --exact
+```
+
+O instalador silencioso traz só o inglês. Baixe o português (cerca de 2 MB) para a pasta do projeto, que fica fora do Git:
+
+```powershell
+New-Item -ItemType Directory -Force backend\tessdata
+Invoke-WebRequest https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/por.traineddata -OutFile backend\tessdata\por.traineddata
+```
+
+Sem o Tesseract, o sistema funciona normalmente; documentos que precisariam de OCR ficam com a situação "Erro na leitura" e podem ser lidos de novo depois da instalação (botão **Ler novamente**).
+
 ## Variáveis de ambiente
 
 Ficam em `backend\.env` (que **não** vai para o Git). Modelo em [`backend/.env.example`](backend/.env.example).
@@ -142,6 +159,11 @@ Ficam em `backend\.env` (que **não** vai para o Git). Modelo em [`backend/.env.
 | `OLLAMA_TIMEOUT_SECONDS` | `120` | Tempo máximo para gerar uma resposta |
 | `OLLAMA_STATUS_TIMEOUT_SECONDS` | `3` | Tempo máximo da checagem de status |
 | `OLLAMA_STATUS_CACHE_SECONDS` | `10` | Cache do status do Ollama |
+| `DOCUMENTOS_DIR` | `backend/armazenamento/documentos` | Onde os arquivos enviados são guardados |
+| `DOCUMENTO_TAMANHO_MAXIMO_MB` | `10` | Tamanho máximo de cada arquivo |
+| `TESSERACT_CMD` | `C:\Program Files\Tesseract-OCR\tesseract.exe` | Executável do Tesseract |
+| `TESSDATA_DIR` | `backend/tessdata` | Pasta com `por.traineddata` |
+| `OCR_MAXIMO_PAGINAS` | `10` | Páginas lidas por PDF |
 
 O frontend aceita opcionalmente `BACKEND_URL` (padrão `http://127.0.0.1:8000`) em `frontend\.env`, caso o backend rode em outra porta.
 

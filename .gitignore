@@ -25,6 +25,10 @@ dist/
 # Documentos de teste e uploads (podem conter dados reais)
 uploads/
 documentos_teste/
+backend/armazenamento/
+
+# Dados de idioma do Tesseract (baixados à parte; veja o README)
+backend/tessdata/
 
 # Temporários e logs
 *.log

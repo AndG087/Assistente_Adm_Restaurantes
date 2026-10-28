@@ -6,6 +6,7 @@ import { useRestaurantes } from '../hooks/useRestaurantes'
 import { Categorias } from '../paginas/Categorias'
 import { ContasPagar } from '../paginas/ContasPagar'
 import { Despesas } from '../paginas/Despesas'
+import { Documentos } from '../paginas/Documentos'
 import { Fornecedores } from '../paginas/Fornecedores'
 import { Inicio } from '../paginas/Inicio'
 import { formatarDocumento } from '../utils/formato'
@@ -77,6 +78,8 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
         return <Despesas />
       case 'contas':
         return <ContasPagar />
+      case 'documentos':
+        return <Documentos />
       case 'fornecedores':
         return <Fornecedores />
       case 'categorias':

@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     # Banco exclusivo dos testes automatizados; é apagado e recriado a cada execução.
     test_database_url: str | None = None
 
+    # Documentos enviados (notas, boletos, comprovantes). Ficam só neste computador.
+    documentos_dir: Path = BACKEND_DIR / "armazenamento" / "documentos"
+    documento_tamanho_maximo_mb: int = 10
+
+    # OCR (Tesseract). Se o executável não existir, PDFs com texto continuam funcionando.
+    tesseract_cmd: str = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    tessdata_dir: Path = BACKEND_DIR / "tessdata"
+    ocr_idioma: str = "por"
+    ocr_maximo_paginas: int = 10
+    ocr_timeout_segundos: float = 60.0
+
     # Sessão de login
     sessao_duracao_horas: int = 12
     # Em produção com HTTPS deve ser True; localmente (HTTP) precisa ser False.

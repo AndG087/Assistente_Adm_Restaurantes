@@ -12,5 +12,11 @@ cryptography==50.0.2  # exigido pelo PyMySQL para autenticar no MySQL 8+/9 (cach
 # Comunicação com o Ollama
 httpx==0.28.1
 
+# Documentos: upload, leitura de PDFs e imagens para OCR
+python-multipart==0.0.32
+pypdf==6.21.3
+pypdfium2==5.14.0
+pillow==13.0.0
+
 # Testes
 pytest==9.1.1

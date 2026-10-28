@@ -4,6 +4,7 @@ export const PAGINAS = {
   inicio: 'Início',
   despesas: 'Despesas',
   contas: 'Contas a pagar',
+  documentos: 'Documentos',
   fornecedores: 'Fornecedores',
   categorias: 'Categorias',
   assistente: 'Assistente',
