@@ -54,6 +54,8 @@ describe('Despesas', () => {
     })
     renderizarNaArea(<Despesas />)
     await screen.findByText('Nenhuma despesa encontrada com estes filtros.')
+    // As categorias chegam numa consulta própria: espera a opção existir antes de escolher.
+    await screen.findByRole('option', { name: 'Bebidas' })
 
     await userEvent.selectOptions(screen.getByLabelText('Categoria'), 'Bebidas')
 

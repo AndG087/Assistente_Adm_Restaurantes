@@ -155,6 +155,9 @@ describe('Documentos', () => {
     expect(screen.getByLabelText('Valor (R$)')).toHaveValue('1234,56')
     expect(screen.getByLabelText('Data da despesa')).toHaveValue('2026-10-05')
     await waitFor(() => expect(screen.getByLabelText('Fornecedor')).toHaveDisplayValue('Boa Comida'))
+    // As categorias chegam numa consulta própria: espera a opção existir antes de escolher
+    // (sem isso o teste falhava às vezes, quando ela chegava depois do fornecedor).
+    await screen.findByRole('option', { name: 'Alimentos e insumos' })
     await userEvent.selectOptions(screen.getByLabelText('Categoria'), 'Alimentos e insumos')
     await userEvent.click(screen.getByRole('button', { name: 'Criar despesa' }))
 
