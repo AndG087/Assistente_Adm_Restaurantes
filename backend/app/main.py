@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api import (
+    assistente,
     auth,
     categorias,
     contas_pagar,
@@ -26,6 +27,7 @@ ROTEADORES = (
     contas_pagar,
     documentos,
     sugestoes,
+    assistente,
     ia,
 )
 for modulo in ROTEADORES:

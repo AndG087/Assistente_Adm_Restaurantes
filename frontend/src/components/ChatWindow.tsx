@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
-import { ApiError, enviarMensagem, type IAStatusResponse } from '../api'
+import { ApiError, type IAStatusResponse } from '../api'
+import { useArea } from '../contexto'
+import { perguntarAssistente } from '../recursos/assistente'
 import { ChatInput } from './ChatInput'
 import { MessageList, type Mensagem } from './MessageList'
 
@@ -12,36 +14,37 @@ interface ChatWindowProps {
 function avisoDaIA(statusIA: IAStatusResponse | null): string | null {
   if (!statusIA) return null
   if (!statusIA.ollama_disponivel) {
-    return 'O Ollama não está em execução. Inicie o Ollama para conversar com a IA; o restante do sistema continua funcionando.'
+    return 'O Ollama não está em execução. Perguntas sobre os dados (gastos, contas) continuam funcionando; a conversa geral fica indisponível até iniciar o Ollama.'
   }
   if (!statusIA.modelo_disponivel) {
-    return `O modelo "${statusIA.modelo}" não está instalado. Instale com: ollama pull ${statusIA.modelo}`
+    return `O modelo "${statusIA.modelo}" não está instalado. Perguntas sobre os dados continuam funcionando; para a conversa geral, instale com: ollama pull ${statusIA.modelo}`
   }
   return null
 }
 
 export function ChatWindow({ statusIA, onFalha, onSessaoExpirada }: ChatWindowProps) {
+  const { restaurante } = useArea()
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [aguardando, setAguardando] = useState(false)
   const proximoId = useRef(1)
 
-  function adicionar(autor: Mensagem['autor'], texto: string) {
+  function adicionar(mensagem: Omit<Mensagem, 'id'>) {
     const id = proximoId.current++
-    setMensagens((anteriores) => [...anteriores, { id, autor, texto }])
+    setMensagens((anteriores) => [...anteriores, { id, ...mensagem }])
   }
 
   async function enviar(texto: string) {
-    adicionar('usuario', texto)
+    adicionar({ autor: 'usuario', texto })
     setAguardando(true)
     try {
-      const { resposta } = await enviarMensagem(texto)
-      adicionar('ia', resposta)
+      const r = await perguntarAssistente(restaurante.id, texto)
+      adicionar({ autor: 'ia', texto: r.resposta, origem: r.origem, consulta: r.consulta, tabela: r.tabela })
     } catch (erro) {
       if (erro instanceof ApiError && erro.status === 401) {
         onSessaoExpirada()
         return
       }
-      adicionar('erro', erro instanceof ApiError ? erro.message : 'Ocorreu um erro inesperado.')
+      adicionar({ autor: 'erro', texto: erro instanceof ApiError ? erro.message : 'Ocorreu um erro inesperado.' })
       onFalha()
     } finally {
       setAguardando(false)
@@ -51,9 +54,13 @@ export function ChatWindow({ statusIA, onFalha, onSessaoExpirada }: ChatWindowPr
   const aviso = avisoDaIA(statusIA)
 
   return (
-    <section className="chat" aria-label="Chat com a IA local">
+    <section className="chat" aria-label="Assistente">
       {aviso && <p className="chat__aviso">{aviso}</p>}
-      <MessageList mensagens={mensagens} aguardandoResposta={aguardando} />
+      <MessageList
+        mensagens={mensagens}
+        aguardandoResposta={aguardando}
+        onSugestao={aguardando ? undefined : (pergunta) => void enviar(pergunta)}
+      />
       <ChatInput onEnviar={enviar} desabilitado={aguardando} />
     </section>
   )

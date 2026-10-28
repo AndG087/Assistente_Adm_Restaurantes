@@ -211,28 +211,30 @@ describe('Chat', () => {
     let responder: (r: Response) => void = () => {}
     const fetchFalso = simularBackend({
       ...LOGADO,
-      'POST /api/ia/chat': () => new Promise((resolve) => (responder = resolve)),
+      'POST /api/restaurantes/*/assistente': () => new Promise((resolve) => (responder = resolve)),
     })
     render(<App />)
 
     await enviarNoChat('Olá')
 
     expect(screen.getByText('Olá')).toBeInTheDocument()
-    expect(screen.getByLabelText('A IA está gerando a resposta')).toBeInTheDocument()
+    expect(screen.getByLabelText('O assistente está preparando a resposta')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Enviar' })).toBeDisabled()
 
-    responder(json({ resposta: 'Olá! Como posso ajudar?', modelo: 'llama3.2:1b' }))
+    responder(
+      json({ resposta: 'Olá! Como posso ajudar?', origem: 'conversa', consulta: null, interpretado_por: null, tabela: null }),
+    )
 
     expect(await screen.findByText('Olá! Como posso ajudar?')).toBeInTheDocument()
-    expect(screen.queryByLabelText('A IA está gerando a resposta')).not.toBeInTheDocument()
-    const [, init] = chamadas(fetchFalso, 'POST', '/api/ia/chat')[0]
+    expect(screen.queryByLabelText('O assistente está preparando a resposta')).not.toBeInTheDocument()
+    const [, init] = chamadas(fetchFalso, 'POST', '/api/restaurantes/10/assistente')[0]
     expect(JSON.parse(String(init?.body))).toEqual({ mensagem: 'Olá' })
   })
 
   it('mostra o erro do backend quando a IA está indisponível, sem inventar resposta', async () => {
     simularBackend({
       ...LOGADO,
-      'POST /api/ia/chat': () => json({ detail: 'O serviço de IA local (Ollama) não está acessível.' }, 503),
+      'POST /api/restaurantes/*/assistente': () => json({ detail: 'O serviço de IA local (Ollama) não está acessível.' }, 503),
     })
     render(<App />)
 
@@ -245,7 +247,7 @@ describe('Chat', () => {
   it('verifica o status novamente depois de uma falha no chat', async () => {
     const fetchFalso = simularBackend({
       ...LOGADO,
-      'POST /api/ia/chat': () => json({ detail: 'A IA demorou demais para responder. Tente novamente.' }, 504),
+      'POST /api/restaurantes/*/assistente': () => json({ detail: 'A IA demorou demais para responder. Tente novamente.' }, 504),
     })
     render(<App />)
 
@@ -258,7 +260,7 @@ describe('Chat', () => {
   it('volta para o login quando a sessão expira', async () => {
     simularBackend({
       ...LOGADO,
-      'POST /api/ia/chat': () => json({ detail: 'Faça login para continuar.' }, 401),
+      'POST /api/restaurantes/*/assistente': () => json({ detail: 'Faça login para continuar.' }, 401),
     })
     render(<App />)
 

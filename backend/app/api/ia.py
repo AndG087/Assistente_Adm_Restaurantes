@@ -14,6 +14,20 @@ from app.services.ollama_service import (
 router = APIRouter(prefix="/ia", tags=["IA"])
 
 
+def mensagem_de_erro_do_ollama(erro: OllamaError, modelo: str) -> tuple[int, str]:
+    """Status HTTP e mensagem fixa (sem detalhes internos) para cada falha do Ollama."""
+    if isinstance(erro, OllamaModeloNaoEncontradoError):
+        return status.HTTP_503_SERVICE_UNAVAILABLE, f"O modelo '{modelo}' não está instalado no Ollama."
+    if isinstance(erro, OllamaIndisponivelError):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "O serviço de IA local (Ollama) não está acessível. Verifique se ele está em execução.",
+        )
+    if isinstance(erro, OllamaTimeoutError):
+        return status.HTTP_504_GATEWAY_TIMEOUT, "A IA demorou demais para responder. Tente novamente."
+    return status.HTTP_502_BAD_GATEWAY, "A IA retornou uma resposta inesperada. Tente novamente."
+
+
 @router.get("/status", response_model=IAStatusResponse)
 async def status_ia(servico: OllamaService = Depends(get_ollama_service)) -> IAStatusResponse:
     resultado = await servico.status()
@@ -30,28 +44,10 @@ async def chat(
     requisicao: ChatRequest,
     servico: OllamaService = Depends(get_ollama_service),
 ) -> ChatResponse:
-    # As mensagens de erro são fixas para não expor detalhes internos ao cliente.
     try:
         resposta = await servico.conversar(requisicao.mensagem)
-    except OllamaModeloNaoEncontradoError:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"O modelo '{servico.modelo}' não está instalado no Ollama.",
-        ) from None
-    except OllamaIndisponivelError:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="O serviço de IA local (Ollama) não está acessível. Verifique se ele está em execução.",
-        ) from None
-    except OllamaTimeoutError:
-        raise HTTPException(
-            status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="A IA demorou demais para responder. Tente novamente.",
-        ) from None
-    except OllamaError:
-        raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY,
-            detail="A IA retornou uma resposta inesperada. Tente novamente.",
-        ) from None
+    except OllamaError as erro:
+        codigo, mensagem = mensagem_de_erro_do_ollama(erro, servico.modelo)
+        raise HTTPException(codigo, detail=mensagem) from None
 
     return ChatResponse(resposta=resposta, modelo=servico.modelo)

@@ -1041,6 +1041,68 @@ textarea.campo__entrada {
   border: 1px solid currentColor;
 }
 
+.mensagem__origem {
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+}
+
+.mensagem__origem--dados {
+  color: var(--cor-ok);
+  font-weight: 600;
+}
+
+.mensagem__tabela {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+.mensagem__tabela table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.mensagem__tabela th,
+.mensagem__tabela td {
+  padding: 4px 12px 4px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--cor-borda);
+  white-space: nowrap;
+}
+
+.mensagem__tabela th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 560px;
+  margin-top: 8px;
+}
+
+.sugestoes__item {
+  padding: 8px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.sugestoes__item:not(:disabled):hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+}
+
+.sugestoes__item:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
 .mensagem--carregando {
   flex-direction: row;
   flex-wrap: wrap;

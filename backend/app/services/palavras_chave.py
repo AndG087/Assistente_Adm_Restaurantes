@@ -69,13 +69,13 @@ _REGRAS: list[tuple[str, list[str]]] = [
 _COMPILADAS = [(categoria, [re.compile(p) for p in padroes]) for categoria, padroes in _REGRAS]
 
 
-def _sem_acento_minusculo(texto: str) -> str:
-    """Remove acentos SEM mudar o tamanho do texto (cada caractere vira um), para os índices baterem."""
+def normalizar(texto: str) -> str:
+    """Minúsculas e sem acentos, SEM mudar o tamanho do texto (cada caractere vira um), para os índices baterem."""
     return "".join(unicodedata.normalize("NFKD", c)[0] for c in texto.lower())
 
 
 def chave_de_nome(nome: str) -> str:
-    return _sem_acento_minusculo(nome).strip()
+    return normalizar(nome).strip()
 
 
 @dataclass(frozen=True)
@@ -86,7 +86,7 @@ class Reconhecimento:
 
 def reconhecer(descricao: str, categorias_disponiveis: set[str]) -> Reconhecimento | None:
     """Primeira regra que casa com a descrição, entre as categorias disponíveis (nomes normalizados)."""
-    texto = _sem_acento_minusculo(descricao)
+    texto = normalizar(descricao)
     for categoria, padroes in _COMPILADAS:
         if chave_de_nome(categoria) not in categorias_disponiveis:
             continue
