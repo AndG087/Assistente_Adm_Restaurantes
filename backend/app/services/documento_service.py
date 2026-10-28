@@ -4,6 +4,7 @@ import hashlib
 import logging
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.tempo import agora_utc
@@ -31,6 +32,12 @@ def _nome_seguro(nome: str | None) -> str:
     return (nome or "documento")[:255]
 
 
+def _pelo_sha256(db: Session, restaurante_id: int, sha256: str) -> Documento | None:
+    return db.scalar(
+        select(Documento).where(Documento.restaurante_id == restaurante_id, Documento.sha256 == sha256)
+    )
+
+
 def enviar(db: Session, restaurante: Restaurante, usuario_id: int, nome: str | None, conteudo: bytes) -> Documento:
     tipo = extracao_texto.detectar_tipo(conteudo)
     if tipo is None:
@@ -38,9 +45,7 @@ def enviar(db: Session, restaurante: Restaurante, usuario_id: int, nome: str | N
     tipo_mime, extensao = tipo
 
     sha256 = hashlib.sha256(conteudo).hexdigest()
-    existente = db.scalar(
-        select(Documento).where(Documento.restaurante_id == restaurante.id, Documento.sha256 == sha256)
-    )
+    existente = _pelo_sha256(db, restaurante.id, sha256)
     if existente is not None:
         raise DocumentoRepetidoError(existente)
 
@@ -58,10 +63,14 @@ def enviar(db: Session, restaurante: Restaurante, usuario_id: int, nome: str | N
     db.add(documento)
     try:
         db.commit()
-    except Exception:
+    except Exception as erro:
         # Se o registro não foi gravado, o arquivo não pode ficar órfão no disco.
         db.rollback()
         armazenamento.remover(documento.arquivo)
+        # O mesmo arquivo enviado duas vezes ao mesmo tempo: a restrição UNIQUE barra o segundo.
+        existente = _pelo_sha256(db, restaurante.id, sha256) if isinstance(erro, IntegrityError) else None
+        if existente is not None:
+            raise DocumentoRepetidoError(existente) from None
         raise
     db.refresh(documento)
     return documento

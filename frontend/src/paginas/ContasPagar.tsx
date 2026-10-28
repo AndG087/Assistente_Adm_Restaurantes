@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FormLancamento } from '../components/FormLancamento'
 import { Paginacao } from '../components/Paginacao'
 import { useArea } from '../contexto'
+import { useAcao } from '../hooks/useAcao'
 import { useCarregar } from '../hooks/useCarregar'
 import {
   desfazerPagamento,
@@ -34,32 +35,26 @@ const SITUACOES: Record<SituacaoConta, string> = {
 type Edicao = { modo: 'nova' } | { modo: 'editar'; conta: ContaPagar } | null
 
 export function ContasPagar() {
-  const { restaurante, mensagemDeErro } = useArea()
+  const { restaurante } = useArea()
   const [situacao, setSituacao] = useState<FiltroSituacao>('pendentes')
   const [busca, setBusca] = useState('')
   const [deslocamento, setDeslocamento] = useState(0)
   const [edicao, setEdicao] = useState<Edicao>(null)
   // Conta cujo pagamento está sendo confirmado, com a data escolhida.
   const [pagando, setPagando] = useState<{ conta: ContaPagar; data: string } | null>(null)
-  const [erroAcao, setErroAcao] = useState<string | null>(null)
+  const { executar: executarAcao, ocupado, erro: erroAcao } = useAcao()
 
   const filtros = { situacao, busca: busca.trim(), limite: LIMITE, deslocamento }
   const lista = useCarregar(`${restaurante.id}|${JSON.stringify(filtros)}`, () =>
     listarContas(restaurante.id, filtros),
   )
 
-  async function executar(acao: () => Promise<unknown>) {
-    setErroAcao(null)
-    try {
-      await acao()
-      lista.recarregar()
-    } catch (e) {
-      setErroAcao(mensagemDeErro(e))
-    }
+  function executar(acao: () => Promise<unknown>) {
+    return executarAcao(acao, lista.recarregar)
   }
 
   function confirmarPagamento() {
-    if (!pagando) return
+    if (!pagando?.data) return
     const { conta, data } = pagando
     setPagando(null)
     void executar(() => pagarConta(restaurante.id, conta.id, data))
@@ -137,14 +132,21 @@ export function ContasPagar() {
               type="date"
               value={pagando.data}
               max={hojeIso()}
+              required
               onChange={(e) => setPagando({ ...pagando, data: e.target.value })}
             />
           </label>
+          {!pagando.data && <p className="campo__ajuda">Informe a data do pagamento.</p>}
           <div className="formulario__acoes">
             <button type="button" className="botao botao--secundario" onClick={() => setPagando(null)}>
               Cancelar
             </button>
-            <button type="button" className="botao botao--primario" onClick={confirmarPagamento}>
+            <button
+              type="button"
+              className="botao botao--primario"
+              disabled={!pagando.data}
+              onClick={confirmarPagamento}
+            >
               Confirmar pagamento
             </button>
           </div>
@@ -205,6 +207,7 @@ export function ContasPagar() {
                           type="button"
                           className="link"
                           aria-label={`Desfazer pagamento de ${c.descricao}`}
+                          disabled={ocupado}
                           onClick={() => {
                             if (window.confirm(`Desfazer o pagamento de "${c.descricao}"? A despesa gerada será removida.`))
                               void executar(() => desfazerPagamento(restaurante.id, c.id))
@@ -218,6 +221,7 @@ export function ContasPagar() {
                             type="button"
                             className="link"
                             aria-label={`Pagar ${c.descricao}`}
+                            disabled={ocupado}
                             onClick={() => setPagando({ conta: c, data: hojeIso() })}
                           >
                             Pagar
@@ -234,6 +238,7 @@ export function ContasPagar() {
                             type="button"
                             className="link link--perigo"
                             aria-label={`Excluir ${c.descricao}`}
+                            disabled={ocupado}
                             onClick={() => {
                               if (window.confirm(`Excluir a conta "${c.descricao}"?`))
                                 void executar(() => excluirConta(restaurante.id, c.id))

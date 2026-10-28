@@ -98,10 +98,17 @@ def obter(db: Session, restaurante_id: int, conta_id: int) -> ContaPagar | None:
     return db.scalar(select(ContaPagar).where(ContaPagar.id == conta_id, ContaPagar.restaurante_id == restaurante_id))
 
 
-def criar(db: Session, restaurante_id: int, usuario_id: int, dados: ContaPagarCreate) -> ContaPagar:
+def novo(db: Session, restaurante_id: int, usuario_id: int, dados: ContaPagarCreate) -> ContaPagar:
+    """Valida e adiciona à sessão sem commit, para quem precisa gravar junto com outra mudança."""
     referencias.validar(db, restaurante_id, dados.categoria_id, dados.fornecedor_id)
     conta = ContaPagar(restaurante_id=restaurante_id, criado_por_id=usuario_id, **dados.model_dump())
     db.add(conta)
+    db.flush()  # gera o id
+    return conta
+
+
+def criar(db: Session, restaurante_id: int, usuario_id: int, dados: ContaPagarCreate) -> ContaPagar:
+    conta = novo(db, restaurante_id, usuario_id, dados)
     db.commit()
     db.refresh(conta)
     return conta
@@ -137,6 +144,8 @@ def excluir(db: Session, conta: ContaPagar) -> None:
 
 def pagar(db: Session, conta: ContaPagar, usuario_id: int, data_pagamento: date | None) -> ContaPagar:
     """Marca como paga e cria a despesa correspondente, na mesma transação."""
+    # Trava a linha até o commit: um segundo pedido simultâneo espera e já encontra a conta paga.
+    db.refresh(conta, with_for_update=True)
     _garantir_pendente(conta)
     data_pagamento = data_pagamento or tempo.hoje()
     if data_pagamento > tempo.hoje():
@@ -161,6 +170,7 @@ def pagar(db: Session, conta: ContaPagar, usuario_id: int, data_pagamento: date 
 
 def desfazer_pagamento(db: Session, conta: ContaPagar) -> ContaPagar:
     """Volta a conta para pendente e remove a despesa que o pagamento havia gerado."""
+    db.refresh(conta, with_for_update=True)
     if conta.data_pagamento is None:
         raise OperacaoNaoPermitidaError("Esta conta não está paga.")
     if conta.despesa is not None:

@@ -65,8 +65,11 @@ describe('Acesso', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Acesse sua conta' })).toBeInTheDocument()
-    expect(screen.getByText('Conectado')).toBeInTheDocument()
-    expect(screen.getByText('llama3.2:1b')).toBeInTheDocument()
+    // A apresentação do produto vem ao lado do formulário.
+    expect(screen.getByRole('heading', { name: /O caderninho de contas do seu restaurante/ })).toBeInTheDocument()
+    // Com tudo funcionando, o topo fica limpo: nada de "backend" ou nome de modelo à vista.
+    expect(await screen.findByText('Tudo funcionando')).toBeInTheDocument()
+    expect(screen.queryByText(/backend/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Mensagem para a IA')).not.toBeInTheDocument()
   })
 
@@ -92,8 +95,9 @@ describe('Acesso', () => {
 
     render(<App />)
 
-    expect(await screen.findByText('Desconectado')).toBeInTheDocument()
-    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível conectar ao backend')
+    expect(await screen.findByText('Sistema desconectado')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Verificar novamente' })).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível conectar ao Caderninho')
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument()
   })
 
@@ -191,6 +195,45 @@ describe('Acesso', () => {
   })
 })
 
+describe('Barra lateral', () => {
+  it('agrupa as telas e marca a atual', async () => {
+    simularBackend(LOGADO)
+    render(<App />)
+
+    const menu = await screen.findByRole('navigation', { name: 'Seções' })
+    expect(within(menu).getByText('Dia a dia')).toBeInTheDocument()
+    expect(within(menu).getByText('Cadastros')).toBeInTheDocument()
+    expect(within(menu).getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Enviar nota ou boleto' })).toHaveAttribute('href', '#/documentos')
+
+    await userEvent.click(within(menu).getByRole('link', { name: 'Contas a pagar' }))
+
+    await waitFor(() =>
+      expect(within(menu).getByRole('link', { name: 'Contas a pagar' })).toHaveAttribute('aria-current', 'page'),
+    )
+  })
+
+  it('no celular, o menu abre pelo botão e fecha com Esc ou ao escolher uma tela', async () => {
+    simularBackend(LOGADO)
+    render(<App />)
+
+    const abrir = await screen.findByRole('button', { name: 'Abrir menu' })
+    const menu = screen.getByRole('complementary', { name: 'Menu' })
+    expect(abrir).toHaveAttribute('aria-expanded', 'false')
+
+    await userEvent.click(abrir)
+    expect(abrir).toHaveAttribute('aria-expanded', 'true')
+    expect(menu).toHaveClass('menu-lateral--aberto')
+
+    await userEvent.keyboard('{Escape}')
+    expect(abrir).toHaveAttribute('aria-expanded', 'false')
+
+    await userEvent.click(abrir)
+    await userEvent.click(within(menu).getByRole('link', { name: 'Despesas' }))
+    expect(abrir).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
 describe('Restaurantes', () => {
   it('troca o restaurante selecionado', async () => {
     simularBackend({
@@ -202,7 +245,8 @@ describe('Restaurantes', () => {
 
     const seletor = await screen.findByRole('combobox')
     expect(seletor).toHaveDisplayValue('Ana Lanches')
-    expect(screen.getByText('Não informado')).toBeInTheDocument()
+    // Sem CNPJ cadastrado, a barra lateral não mostra nada (em vez de "Não informado").
+    expect(screen.queryByText('11.222.333/0001-81')).not.toBeInTheDocument()
 
     await userEvent.selectOptions(seletor, 'Cantina da Ana')
 
@@ -267,11 +311,25 @@ describe('Chat', () => {
       'POST /api/restaurantes/*/assistente': () => json({ detail: 'A IA demorou demais para responder. Tente novamente.' }, 504),
     })
     render(<App />)
+    const consultasDoStatus = () => chamadas(fetchFalso, 'GET', '/api/ia/status').length
 
+    // Ao abrir e de novo ao confirmar o login (o nome do modelo só vem para quem está logado).
+    await waitFor(() => expect(consultasDoStatus()).toBe(2))
     await enviarNoChat('Olá')
 
     await screen.findByRole('alert')
-    await waitFor(() => expect(chamadas(fetchFalso, 'GET', '/api/ia/status')).toHaveLength(2))
+    await waitFor(() => expect(consultasDoStatus()).toBe(3))
+  })
+
+  it('antes do login o cabeçalho não mostra qual modelo de IA está em uso', async () => {
+    simularBackend({
+      ...NAO_LOGADO,
+      'GET /api/ia/status': () => json({ ollama_disponivel: true, modelo: null, modelo_disponivel: true }),
+    })
+    render(<App />)
+
+    expect(await screen.findByText('Tudo funcionando')).toBeInTheDocument()
+    expect(screen.queryByText(/llama3\.2/)).not.toBeInTheDocument()
   })
 
   it('volta para o login quando a sessão expira', async () => {

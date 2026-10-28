@@ -1,30 +1,22 @@
 import { useState, type FormEvent } from 'react'
 import { useArea } from '../contexto'
+import { useAcao } from '../hooks/useAcao'
 import { useCarregar } from '../hooks/useCarregar'
 import { adicionarMembro, alterarPapel, listarMembros, removerMembro, type Membro, type Papel } from '../recursos/equipe'
 
 const PAPEIS: Record<Papel, string> = { proprietario: 'Proprietário', membro: 'Membro' }
 
 export function Equipe() {
-  const { restaurante, mensagemDeErro, recarregarRestaurantes } = useArea()
+  const { restaurante, recarregarRestaurantes } = useArea()
   const lista = useCarregar(`equipe-${restaurante.id}`, () => listarMembros(restaurante.id))
   const [email, setEmail] = useState('')
   const [papel, setPapel] = useState<Papel>('membro')
-  const [erro, setErro] = useState<string | null>(null)
+  const { executar: executarAcao, ocupado, erro } = useAcao()
   const proprietario = restaurante.papel === 'proprietario'
 
-  async function executar(acao: () => Promise<unknown>, afetaVoce = false): Promise<boolean> {
-    setErro(null)
-    try {
-      await acao()
-      // Se a mudança foi na própria pessoa (saiu ou mudou de papel), a lista de restaurantes muda.
-      if (afetaVoce) recarregarRestaurantes()
-      else lista.recarregar()
-      return true
-    } catch (e) {
-      setErro(mensagemDeErro(e))
-      return false
-    }
+  function executar(acao: () => Promise<unknown>, afetaVoce = false): Promise<boolean> {
+    // Se a mudança foi na própria pessoa (saiu ou mudou de papel), a lista de restaurantes muda.
+    return executarAcao(acao, afetaVoce ? recarregarRestaurantes : lista.recarregar)
   }
 
   async function adicionar(evento: FormEvent) {
@@ -69,7 +61,7 @@ export function Equipe() {
               <option value="proprietario">Proprietário</option>
             </select>
           </label>
-          <button type="submit" className="botao botao--primario">
+          <button type="submit" className="botao botao--primario" disabled={ocupado}>
             Adicionar
           </button>
           <span className="campo__ajuda campo--largo">A pessoa precisa já ter criado uma conta neste sistema.</span>
@@ -97,6 +89,7 @@ export function Equipe() {
                     className="campo__entrada"
                     aria-label={`Papel de ${m.nome}`}
                     value={m.papel}
+                    disabled={ocupado}
                     onChange={(e) =>
                       void executar(() => alterarPapel(restaurante.id, m.usuario_id, e.target.value as Papel), m.voce)
                     }
@@ -112,6 +105,7 @@ export function Equipe() {
                     type="button"
                     className="link link--perigo"
                     aria-label={m.voce ? 'Sair do restaurante' : `Remover ${m.nome}`}
+                    disabled={ocupado}
                     onClick={() => remover(m)}
                   >
                     {m.voce ? 'Sair' : 'Remover'}

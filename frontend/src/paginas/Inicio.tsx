@@ -10,6 +10,12 @@ interface InicioProps {
 }
 
 const NOME_DO_MES = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+const DATA_POR_EXTENSO = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+function saudacao(hora: number): string {
+  if (hora < 12) return 'Bom dia'
+  return hora < 18 ? 'Boa tarde' : 'Boa noite'
+}
 
 /** Visão geral com dados reais: alertas de vencimento e despesas do mês, calculados pelo backend. */
 export function Inicio({ irPara }: InicioProps) {
@@ -21,9 +27,14 @@ export function Inicio({ irPara }: InicioProps) {
   )
 
   const a = alertas.dados
+  const agora = new Date()
 
   return (
     <div className="inicio">
+      <header className="inicio__boas-vindas">
+        <h2 className="inicio__saudacao">{saudacao(agora.getHours())}!</h2>
+        <p>Veja como estão as contas do restaurante hoje, {DATA_POR_EXTENSO.format(agora)}.</p>
+      </header>
       <section aria-labelledby="titulo-vencimentos">
         <h2 id="titulo-vencimentos" className="inicio__titulo">
           Vencimentos

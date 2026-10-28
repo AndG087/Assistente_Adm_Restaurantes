@@ -103,3 +103,16 @@ def test_isolamento(client_logado, restaurante_id, intruso, bruno):
     rid_intruso = intruso.get("/api/restaurantes").json()[0]["id"]
     # Mexer em alguém que não é da equipe do próprio restaurante.
     assert intruso.delete(url(rid_intruso, f"/{bruno.usuario_id}")).status_code == 404
+
+
+def test_limita_emails_sem_conta_para_nao_servir_de_consulta(client_logado, restaurante_id, bruno, monkeypatch):
+    from app.api import membros as rotas_membros
+
+    monkeypatch.setattr(rotas_membros.emails_nao_encontrados, "maximo", 3)
+    codigos = [adicionar(client_logado, restaurante_id, email=f"teste{i}@exemplo.com").status_code for i in range(4)]
+    assert codigos == [422, 422, 422, 429]
+
+    # Bloqueado, nem um e-mail que existe é testado: a resposta não revela nada.
+    bloqueado = adicionar(client_logado, restaurante_id)
+    assert bloqueado.status_code == 429
+    assert "Muitos e-mails não encontrados" in bloqueado.json()["detail"]

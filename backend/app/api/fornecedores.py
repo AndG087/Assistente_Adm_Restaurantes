@@ -1,21 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import APIRouter, Path, Query, status
 
-from app.api.deps import DbSession, VinculoRestaurante
+from app.api.deps import DbSession, VinculoRestaurante, ou_404
 from app.models import Fornecedor
 from app.schemas.fornecedor import FornecedorCreate, FornecedorResponse, FornecedorUpdate
 from app.services import fornecedor_service
-from app.services.erros import RegistroDuplicadoError
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/fornecedores", tags=["Fornecedores"])
 
 
 def _obter_ou_404(db: DbSession, vinculo: VinculoRestaurante, fornecedor_id: int) -> Fornecedor:
-    fornecedor = fornecedor_service.obter(db, vinculo.restaurante_id, fornecedor_id)
-    if fornecedor is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Fornecedor não encontrado.")
-    return fornecedor
+    return ou_404(fornecedor_service.obter(db, vinculo.restaurante_id, fornecedor_id), "Fornecedor não encontrado.")
 
 
 @router.get("", response_model=list[FornecedorResponse])
@@ -30,10 +26,7 @@ def listar(
 
 @router.post("", response_model=FornecedorResponse, status_code=status.HTTP_201_CREATED)
 def criar(dados: FornecedorCreate, db: DbSession, vinculo: VinculoRestaurante) -> Fornecedor:
-    try:
-        return fornecedor_service.criar(db, vinculo.restaurante_id, dados)
-    except RegistroDuplicadoError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    return fornecedor_service.criar(db, vinculo.restaurante_id, dados)
 
 
 @router.get("/{fornecedor_id}", response_model=FornecedorResponse)
@@ -49,7 +42,4 @@ def atualizar(
     fornecedor_id: Annotated[int, Path(gt=0)],
 ) -> Fornecedor:
     fornecedor = _obter_ou_404(db, vinculo, fornecedor_id)
-    try:
-        return fornecedor_service.atualizar(db, fornecedor, dados)
-    except RegistroDuplicadoError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    return fornecedor_service.atualizar(db, fornecedor, dados)

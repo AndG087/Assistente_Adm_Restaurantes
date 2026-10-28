@@ -1,18 +1,24 @@
-/* Tokens de design e estilos base */
+/* Tokens de design e estilos base
+ *
+ * Identidade do Caderninho: papel de caderno (fundo creme) e caneta azul (cor principal).
+ * Vermelho e laranja ficam reservados para "vencida" e "vence hoje", para não confundir.
+ */
 
 :root {
-  --cor-fundo: #f4f6f8;
-  --cor-superficie: #ffffff;
-  --cor-superficie-suave: #f8fafb;
-  --cor-borda: #e2e7ec;
-  --cor-texto: #1c2733;
-  --cor-texto-suave: #5d6b79;
-  --cor-primaria: #0f766e;
-  --cor-primaria-hover: #115e59;
+  --cor-fundo: #f6f2e9;
+  --cor-superficie: #fffdf8;
+  --cor-superficie-suave: #faf6ee;
+  --cor-borda: #e6dece;
+  --cor-texto: #1f2733;
+  --cor-texto-suave: #635d52;
+  --cor-primaria: #24426e;
+  --cor-primaria-hover: #1a3254;
   --cor-primaria-contraste: #ffffff;
-  --cor-mensagem-usuario: #0f766e;
+  --cor-primaria-fundo: #e8eef8;
+  --cor-margem: #d64545;
+  --cor-mensagem-usuario: #24426e;
   --cor-mensagem-usuario-texto: #ffffff;
-  --cor-mensagem-ia: #eef2f5;
+  --cor-mensagem-ia: #f1ece1;
 
   --cor-ok: #15803d;
   --cor-ok-fundo: #e8f5ec;
@@ -20,12 +26,12 @@
   --cor-alerta-fundo: #fdf3e3;
   --cor-erro: #b91c1c;
   --cor-erro-fundo: #fdecec;
-  --cor-neutra: #64748b;
-  --cor-neutra-fundo: #eef2f5;
+  --cor-neutra: #6b6558;
+  --cor-neutra-fundo: #f1ece1;
 
-  --raio: 12px;
-  --raio-pequeno: 8px;
-  --sombra: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 16px rgb(16 24 40 / 6%);
+  --raio: 14px;
+  --raio-pequeno: 10px;
+  --sombra: 0 1px 2px rgb(60 45 20 / 6%), 0 4px 16px rgb(60 45 20 / 7%);
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   color-scheme: light dark;
@@ -39,18 +45,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --cor-fundo: #0f1419;
-    --cor-superficie: #171e26;
-    --cor-superficie-suave: #1c242d;
-    --cor-borda: #2a3541;
-    --cor-texto: #e6ebf0;
-    --cor-texto-suave: #9aa8b6;
-    --cor-primaria: #2dd4bf;
-    --cor-primaria-hover: #5eead4;
-    --cor-primaria-contraste: #062925;
-    --cor-mensagem-usuario: #134e4a;
-    --cor-mensagem-usuario-texto: #e6fffb;
-    --cor-mensagem-ia: #222c37;
+    --cor-fundo: #12161c;
+    --cor-superficie: #1a1f27;
+    --cor-superficie-suave: #1f252e;
+    --cor-borda: #2e3642;
+    --cor-texto: #ece7dd;
+    --cor-texto-suave: #aaa396;
+    --cor-primaria: #8db4f2;
+    --cor-primaria-hover: #b2cdf8;
+    --cor-primaria-contraste: #0d1a2e;
+    --cor-primaria-fundo: #1d2b42;
+    --cor-margem: #f07878;
+    --cor-mensagem-usuario: #2a4570;
+    --cor-mensagem-usuario-texto: #eef4ff;
+    --cor-mensagem-ia: #232a34;
 
     --cor-ok: #4ade80;
     --cor-ok-fundo: #12291b;
@@ -58,8 +66,8 @@
     --cor-alerta-fundo: #2e2410;
     --cor-erro: #f87171;
     --cor-erro-fundo: #321616;
-    --cor-neutra: #94a3b8;
-    --cor-neutra-fundo: #222c37;
+    --cor-neutra: #a8a194;
+    --cor-neutra-fundo: #232a34;
 
     --sombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
   }

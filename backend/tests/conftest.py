@@ -7,6 +7,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.models  # noqa: F401  (registra as tabelas em Base.metadata)
+from app.api import auth as rotas_auth
+from app.api import membros as rotas_membros
 from app.core.config import get_settings
 from app.core.database import Base, get_db
 from app.main import app
@@ -78,6 +80,19 @@ def db(engine_teste: Engine) -> Iterator[Session]:
     with engine_teste.begin() as conexao:
         for tabela in reversed(Base.metadata.sorted_tables):
             conexao.execute(tabela.delete())
+
+
+@pytest.fixture(autouse=True)
+def zerar_limites_de_tentativas() -> None:
+    """Os limites ficam em memória: sem isto, um teste herdaria as falhas de login do anterior."""
+    limites = (
+        rotas_auth.falhas_por_email,
+        rotas_auth.falhas_por_ip,
+        rotas_auth.cadastros_por_ip,
+        rotas_membros.emails_nao_encontrados,
+    )
+    for limite in limites:
+        limite.limpar()
 
 
 @pytest.fixture

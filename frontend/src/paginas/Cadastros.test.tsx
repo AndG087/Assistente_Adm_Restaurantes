@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { chamadas, corpoEnviado, json, renderizarNaArea, simularBackend } from '../test/backendFalso'
@@ -88,6 +88,24 @@ describe('Categorias', () => {
       nome: 'Bebidas',
       ativo: false,
     })
+  })
+
+  it('clique duplo envia o pedido uma vez só e trava o botão até a resposta', async () => {
+    let responder: (r: Response) => void = () => {}
+    const fetchFalso = simularBackend({
+      'GET /api/restaurantes/10/categorias': () => json([{ id: 1, nome: 'Bebidas', ativo: true }]),
+      'PUT /api/restaurantes/10/categorias/1': () => new Promise<Response>((r) => (responder = r)),
+    })
+    renderizarNaArea(<Categorias />)
+
+    const botao = await screen.findByRole('button', { name: 'Inativar Bebidas' })
+    fireEvent.click(botao)
+    fireEvent.click(botao) // mesmo instante: a tela ainda não foi redesenhada
+
+    await waitFor(() => expect(botao).toBeDisabled())
+    expect(chamadas(fetchFalso, 'PUT', '/api/restaurantes/10/categorias/1')).toHaveLength(1)
+    responder(json({ id: 1, nome: 'Bebidas', ativo: false }))
+    await waitFor(() => expect(botao).toBeEnabled())
   })
 })
 

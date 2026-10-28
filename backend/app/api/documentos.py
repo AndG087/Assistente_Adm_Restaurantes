@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Path, UploadFile, status
 from fastapi.responses import FileResponse
 
-from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante
+from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante, ou_404
 from app.core.config import get_settings
 from app.models import Documento, StatusDocumento
 from app.schemas.documento import (
@@ -15,7 +15,6 @@ from app.schemas.documento import (
 )
 from app.schemas.financeiro import Referencia
 from app.services import armazenamento, conferencia_service, documento_service
-from app.services.erros import OperacaoNaoPermitidaError, ReferenciaInvalidaError
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/documentos", tags=["Documentos"])
 
@@ -23,10 +22,7 @@ IdPositivo = Annotated[int, Path(gt=0)]
 
 
 def _obter_ou_404(db: DbSession, vinculo: VinculoRestaurante, documento_id: int) -> Documento:
-    documento = documento_service.obter(db, vinculo.restaurante_id, documento_id)
-    if documento is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Documento não encontrado.")
-    return documento
+    return ou_404(documento_service.obter(db, vinculo.restaurante_id, documento_id), "Documento não encontrado.")
 
 
 @router.get("", response_model=list[DocumentoResumo])
@@ -86,10 +82,7 @@ def baixar_arquivo(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdP
 @router.post("/{documento_id}/reprocessar", response_model=DocumentoDetalhe)
 def reprocessar(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdPositivo) -> Documento:
     documento = _obter_ou_404(db, vinculo, documento_id)
-    try:
-        return documento_service.reprocessar(db, documento, vinculo.restaurante.cnpj)
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    return documento_service.reprocessar(db, documento, vinculo.restaurante.cnpj)
 
 
 @router.get("/{documento_id}/conferencia", response_model=ConferenciaResponse)
@@ -112,27 +105,16 @@ def confirmar(
     documento_id: IdPositivo,
 ) -> Documento:
     documento = _obter_ou_404(db, vinculo, documento_id)
-    try:
-        return conferencia_service.confirmar(db, documento, usuario.id, dados)
-    except ReferenciaInvalidaError as erro:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(erro)) from None
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    return conferencia_service.confirmar(db, documento, usuario.id, dados)
 
 
 @router.post("/{documento_id}/descartar", response_model=DocumentoDetalhe)
 def descartar(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdPositivo) -> Documento:
     documento = _obter_ou_404(db, vinculo, documento_id)
-    try:
-        return conferencia_service.descartar(db, documento)
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    return conferencia_service.descartar(db, documento)
 
 
 @router.delete("/{documento_id}", status_code=status.HTTP_204_NO_CONTENT)
 def excluir(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdPositivo) -> None:
     documento = _obter_ou_404(db, vinculo, documento_id)
-    try:
-        documento_service.excluir(db, documento)
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    documento_service.excluir(db, documento)

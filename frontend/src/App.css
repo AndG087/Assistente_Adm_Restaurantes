@@ -53,23 +53,40 @@
   gap: 12px;
 }
 
-.cabecalho__logo {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--cor-primaria);
-  color: var(--cor-primaria-contraste);
-  font-weight: 700;
-  font-size: 0.9375rem;
-  letter-spacing: 0.02em;
+.logo {
+  flex-shrink: 0;
+  display: block;
 }
 
 .cabecalho__titulo {
-  font-size: 1.125rem;
-  font-weight: 650;
-  line-height: 1.25;
+  font-size: 1.25rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--cor-primaria);
+}
+
+/* Com tudo funcionando, o status ocupa o mínimo: um ponto verde e duas palavras. */
+.indicador-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--cor-texto-suave);
+  cursor: default;
+}
+
+.indicador-status--problema {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.indicador-status__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-ok);
+  box-shadow: 0 0 0 3px var(--cor-ok-fundo);
 }
 
 .cabecalho__subtitulo {
@@ -78,6 +95,7 @@
 }
 
 .cabecalho__status {
+  margin-left: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -118,6 +136,115 @@
 
 .acesso {
   overflow: hidden;
+}
+
+/* Tela de entrada: apresentação do produto ao lado do formulário. */
+.acesso-vitrine {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 440px);
+  align-items: center;
+  gap: 48px;
+  width: 100%;
+  max-width: 1040px;
+  margin: auto;
+}
+
+/* Folha de caderno: linhas finas em azul e a margem vermelha, bem suaves para não competir com o texto. */
+.vitrine {
+  position: relative;
+  padding: 36px 36px 32px 64px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background-color: var(--cor-superficie);
+  background-image:
+    linear-gradient(to right, transparent 39px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 39px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 41px, transparent 41px),
+    repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--cor-primaria) 9%, transparent) 31px 32px);
+  box-shadow: var(--sombra);
+}
+
+.vitrine__titulo {
+  margin-top: 20px;
+  font-size: 1.875rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--cor-primaria);
+  text-wrap: balance;
+}
+
+.vitrine__texto {
+  margin-top: 12px;
+  font-size: 1.0625rem;
+  color: var(--cor-texto-suave);
+}
+
+.vitrine__beneficios {
+  display: grid;
+  gap: 16px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vitrine__beneficios li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.vitrine__beneficios strong {
+  display: block;
+  color: var(--cor-texto);
+}
+
+.vitrine__beneficios li > span:last-child {
+  color: var(--cor-texto-suave);
+  font-size: 0.9375rem;
+}
+
+.vitrine__marca {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--cor-primaria-fundo);
+  color: var(--cor-primaria);
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.vitrine__privacidade {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--cor-borda);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+@media (max-width: 860px) {
+  .acesso-vitrine {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  /* No celular, quem já usa o sistema não precisa rolar a apresentação para entrar. */
+  .acesso-vitrine > .acesso {
+    order: -1;
+  }
+
+  .vitrine {
+    padding: 24px 20px 24px 52px;
+    background-image:
+      linear-gradient(to right, transparent 31px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 31px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 33px, transparent 33px),
+      repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--cor-primaria) 9%, transparent) 31px 32px);
+  }
+
+  .vitrine__titulo {
+    font-size: 1.5rem;
+  }
 }
 
 .abas {
@@ -246,79 +373,315 @@
   color: var(--cor-texto-suave);
 }
 
-/* Área logada */
+/* Área logada: barra lateral fixa à esquerda e o conteúdo rolando à direita */
 
-.area-logada {
+.pagina:has(> .app-com-menu) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+
+.app-com-menu {
   flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+}
+
+.app-com-menu__conteudo {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-width: 0;
-}
-
-.restaurante-atual {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px 24px;
-  padding: 14px 20px;
-}
-
-.restaurante-atual__dados {
-  display: flex;
-  gap: 24px;
-  flex: 1;
-}
-
-.restaurante-atual__dados dt {
-  font-size: 0.75rem;
-  color: var(--cor-texto-suave);
-}
-
-.restaurante-atual__dados dd {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  overflow-y: auto;
 }
 
 .area-logada__pagina {
   flex: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
   min-width: 0;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 40px 16px;
 }
 
-/* Menu de seções */
-
-.menu {
+.menu-lateral {
   display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--cor-borda);
-  scrollbar-width: thin;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 12px 12px;
+  background: var(--cor-superficie);
+  border-right: 1px solid var(--cor-borda);
 }
 
-.menu__item {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  border-bottom: 2px solid transparent;
+.menu-lateral__marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 6px;
+}
+
+.menu-lateral__nome {
+  font-size: 1.25rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--cor-primaria);
+}
+
+.menu-lateral__fechar {
+  display: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: transparent;
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+/* Rótulo e seletor ocupam a linha toda; papel e "+ Novo restaurante" dividem a última linha. */
+.menu-lateral__restaurante {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-suave);
+}
+
+.menu-lateral__rotulo,
+.menu-lateral__grupo-titulo {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--cor-texto-suave);
-  font-size: 0.9375rem;
-  font-weight: 600;
+}
+
+.menu-lateral__rotulo,
+.menu-lateral__restaurante .campo__entrada {
+  grid-column: 1 / -1;
+}
+
+.menu-lateral__restaurante .campo__entrada {
+  width: 100%;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-weight: 650;
+}
+
+.menu-lateral__detalhe {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+}
+
+.menu-lateral__novo {
+  justify-self: end;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.menu-lateral__acao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
   text-decoration: none;
 }
 
-.menu__item:hover {
+.menu-lateral__nav {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-lateral__grupo ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-lateral__grupo-titulo {
+  margin: 0 0 4px;
+  padding: 0 10px;
+}
+
+.menu-lateral__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: var(--raio-pequeno);
   color: var(--cor-texto);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.menu__item[aria-current='page'] {
+.menu-lateral__item .icone {
+  flex-shrink: 0;
+  color: var(--cor-texto-suave);
+}
+
+.menu-lateral__item:hover {
+  background: var(--cor-neutra-fundo);
+}
+
+.menu-lateral__item[aria-current='page'] {
+  background: var(--cor-primaria-fundo);
   color: var(--cor-primaria);
-  border-bottom-color: var(--cor-primaria);
 }
 
-.menu__item:focus-visible {
+.menu-lateral__item[aria-current='page'] .icone {
+  color: var(--cor-primaria);
+}
+
+.menu-lateral__item:focus-visible,
+.menu-lateral__fechar:focus-visible,
+.barra-movel__menu:focus-visible {
   outline: 2px solid var(--cor-primaria);
-  outline-offset: -2px;
+  outline-offset: 2px;
+}
+
+.menu-lateral__rodape {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.menu-lateral__usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-lateral__usuario-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-contraste);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* Barra do topo e fundo escurecido: só existem no celular. */
+.barra-movel,
+.menu-lateral__fundo {
+  display: none;
+}
+
+.barra-movel__menu {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.barra-movel__nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .pagina:has(> .app-com-menu) {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .app-com-menu {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-com-menu__conteudo {
+    flex: 1;
+    overflow: visible;
+  }
+
+  .area-logada__pagina {
+    padding: 16px 12px 8px;
+  }
+
+  .barra-movel {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--cor-superficie);
+    border-bottom: 1px solid var(--cor-borda);
+  }
+
+  .menu-lateral {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    width: min(300px, 86vw);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--sombra);
+  }
+
+  .menu-lateral--aberto {
+    transform: none;
+  }
+
+  .menu-lateral__fechar {
+    display: grid;
+  }
+
+  .menu-lateral__fundo {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: block;
+    border: 0;
+    background: rgb(15 20 30 / 45%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-lateral {
+    transition: none;
+  }
 }
 
 /* Páginas de listagem */
@@ -338,8 +701,9 @@
 }
 
 .pagina-secao__cabecalho h2 {
-  font-size: 1.25rem;
-  font-weight: 650;
+  font-size: 1.625rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
 }
 
 .filtros {
@@ -442,6 +806,13 @@
   padding: 12px 16px;
   border-top: 1px solid var(--cor-borda);
   vertical-align: top;
+}
+
+/* Destaca a linha sob o mouse: em tabelas largas o olho não se perde entre as colunas. */
+@media (hover: hover) {
+  .tabela tbody tr:hover td {
+    background: var(--cor-superficie-suave);
+  }
 }
 
 .tabela__numero {
@@ -958,6 +1329,18 @@ a.botao {
   gap: 12px;
 }
 
+.inicio__boas-vindas p {
+  margin-top: 4px;
+  color: var(--cor-texto-suave);
+}
+
+.inicio__saudacao {
+  font-size: 1.75rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  color: var(--cor-primaria);
+}
+
 .inicio__titulo {
   font-size: 1.125rem;
   font-weight: 650;
@@ -1117,7 +1500,8 @@ a.botao {
 .botao {
   border: 1px solid transparent;
   border-radius: var(--raio-pequeno);
-  padding: 8px 16px;
+  min-height: 40px;
+  padding: 9px 18px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
@@ -1137,6 +1521,7 @@ a.botao {
 .botao--primario {
   background: var(--cor-primaria);
   color: var(--cor-primaria-contraste);
+  box-shadow: 0 1px 2px rgb(20 35 60 / 20%), 0 2px 8px color-mix(in srgb, var(--cor-primaria) 22%, transparent);
 }
 
 .botao--primario:not(:disabled):hover {
@@ -1149,10 +1534,12 @@ a.botao {
 }
 
 .botao--secundario {
+  min-height: 34px;
   padding: 6px 12px;
   font-size: 0.8125rem;
-  background: transparent;
+  background: var(--cor-superficie);
   border-color: var(--cor-borda);
+  color: var(--cor-texto);
 }
 
 .botao--secundario:not(:disabled):hover {
@@ -1420,10 +1807,6 @@ a.botao {
     justify-content: space-between;
     padding-left: 0;
     border-left: 0;
-  }
-
-  .restaurante-atual {
-    padding: 12px 14px;
   }
 
   .campo--em-linha {

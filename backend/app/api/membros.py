@@ -1,46 +1,23 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, status
-from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante
+from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante, ou_404
+from app.core.config import get_settings
+from app.core.limite_tentativas import LimiteTentativas
 from app.models import MembroRestaurante, PapelMembro
-from app.schemas.validadores import normalizar_email
+from app.schemas.membro import AlteracaoPapel, MembroResponse, NovoMembro
 from app.services import membro_service
-from app.services.erros import OperacaoNaoPermitidaError, ReferenciaInvalidaError, RegistroDuplicadoError
+from app.services.erros import ReferenciaInvalidaError
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/membros", tags=["Equipe"])
 
 IdUsuario = Annotated[int, Path(gt=0)]
 
-
-class NovoMembro(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    email: str = Field(max_length=254)
-    papel: PapelMembro = PapelMembro.MEMBRO
-
-    @field_validator("email")
-    @classmethod
-    def _email(cls, valor: str) -> str:
-        email = normalizar_email(valor)
-        if email is None:
-            raise ValueError("Informe o e-mail.")
-        return email
-
-
-class AlteracaoPapel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    papel: PapelMembro
-
-
-class MembroResponse(BaseModel):
-    usuario_id: int
-    nome: str
-    email: str
-    papel: PapelMembro
-    voce: bool
+# A resposta "não existe conta com este e-mail" permitiria testar uma lista de e-mails;
+# com poucas tentativas erradas por hora, isso deixa de ser viável.
+_settings = get_settings()
+emails_nao_encontrados = LimiteTentativas(_settings.equipe_maximo_emails_invalidos, 3600)
 
 
 def _resposta(membro: MembroRestaurante, usuario_atual_id: int) -> MembroResponse:
@@ -60,10 +37,7 @@ def _exigir_proprietario(vinculo: MembroRestaurante) -> None:
 
 
 def _obter_ou_404(db: DbSession, vinculo: MembroRestaurante, usuario_id: int) -> MembroRestaurante:
-    membro = membro_service.obter(db, vinculo.restaurante_id, usuario_id)
-    if membro is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Pessoa não encontrada na equipe.")
-    return membro
+    return ou_404(membro_service.obter(db, vinculo.restaurante_id, usuario_id), "Pessoa não encontrada na equipe.")
 
 
 @router.get("", response_model=list[MembroResponse])
@@ -74,12 +48,19 @@ def listar(db: DbSession, vinculo: VinculoRestaurante, usuario: UsuarioAtual) ->
 @router.post("", response_model=MembroResponse, status_code=status.HTTP_201_CREATED)
 def adicionar(dados: NovoMembro, db: DbSession, vinculo: VinculoRestaurante, usuario: UsuarioAtual) -> MembroResponse:
     _exigir_proprietario(vinculo)
+    chave = str(usuario.id)
+    segundos = emails_nao_encontrados.segundos_bloqueado(chave)
+    if segundos:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitos e-mails não encontrados. Confira os endereços e tente mais tarde.",
+            headers={"Retry-After": str(segundos)},
+        )
     try:
         membro = membro_service.adicionar(db, vinculo.restaurante_id, dados.email, dados.papel)
-    except ReferenciaInvalidaError as erro:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(erro)) from None
-    except RegistroDuplicadoError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    except ReferenciaInvalidaError:
+        emails_nao_encontrados.registrar(chave)
+        raise  # vira 422 no tratador global (app/main.py)
     return _resposta(membro, usuario.id)
 
 
@@ -93,10 +74,7 @@ def alterar_papel(
 ) -> MembroResponse:
     _exigir_proprietario(vinculo)
     membro = _obter_ou_404(db, vinculo, usuario_id)
-    try:
-        membro = membro_service.alterar_papel(db, membro, dados.papel)
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    membro = membro_service.alterar_papel(db, membro, dados.papel)
     return _resposta(membro, usuario.id)
 
 
@@ -106,7 +84,4 @@ def remover(db: DbSession, vinculo: VinculoRestaurante, usuario: UsuarioAtual, u
     if usuario_id != usuario.id:
         _exigir_proprietario(vinculo)
     membro = _obter_ou_404(db, vinculo, usuario_id)
-    try:
-        membro_service.remover(db, membro)
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    membro_service.remover(db, membro)

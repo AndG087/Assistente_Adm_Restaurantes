@@ -20,3 +20,4 @@ pillow==13.0.0
 
 # Testes
 pytest==9.1.1
+httpx2==2.16.0  # cliente HTTP que o TestClient do Starlette usa (no lugar do httpx)

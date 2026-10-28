@@ -1,4 +1,4 @@
-"""Erros de regra de negócio, traduzidos em respostas HTTP pelas rotas."""
+"""Erros de regra de negócio, traduzidos em respostas HTTP por tratadores globais em app/main.py."""
 
 
 class RegistroDuplicadoError(Exception):

@@ -33,8 +33,11 @@ def test_status_com_ollama_desligado_responde_200(client_logado, fake_ollama):
     assert resposta.json()["modelo_disponivel"] is False
 
 
-def test_status_nao_exige_login(client):
-    assert client.get("/api/ia/status").status_code == 200
+def test_status_nao_exige_login_mas_so_mostra_o_modelo_para_quem_esta_logado(client):
+    resposta = client.get("/api/ia/status")
+
+    assert resposta.status_code == 200
+    assert resposta.json() == {"ollama_disponivel": True, "modelo": None, "modelo_disponivel": True}
 
 
 # --- POST /api/ia/chat: autenticação ---

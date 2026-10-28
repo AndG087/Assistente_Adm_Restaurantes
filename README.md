@@ -1,4 +1,4 @@
-# Restaurante Admin AI
+# Caderninho
 
 Assistente administrativo inteligente para pequenos e médios restaurantes. O objetivo é organizar notas fiscais, comprovantes, despesas, fornecedores e contas a pagar, com uma IA que ajuda a interpretar documentos e responder perguntas sobre os dados financeiros.
 
@@ -216,9 +216,9 @@ Ambos escutam apenas em `127.0.0.1`: não ficam acessíveis pela rede.
 | Método | Rota | Login | Descrição |
 |---|---|---|---|
 | GET | `/api/health` | não | Backend no ar e situação do banco |
-| GET | `/api/ia/status` | não | Ollama acessível e modelo instalado |
-| POST | `/api/auth/registrar` | não | Cria a conta (`nome`, `email`, `senha`) e já inicia a sessão |
-| POST | `/api/auth/login` | não | Inicia a sessão (`email`, `senha`) |
+| GET | `/api/ia/status` | não | Ollama acessível e modelo instalado (o nome do modelo só vem com login) |
+| POST | `/api/auth/registrar` | não | Cria a conta (`nome`, `email`, `senha`) e já inicia a sessão; 429 após muitos cadastros do mesmo IP |
+| POST | `/api/auth/login` | não | Inicia a sessão (`email`, `senha`); 429 após muitas senhas erradas (veja `LOGIN_*` no `.env.example`) |
 | POST | `/api/auth/logout` | — | Encerra a sessão |
 | GET | `/api/auth/eu` | sim | Usuário logado |
 | GET | `/api/restaurantes` | sim | Restaurantes dos quais o usuário é membro |
@@ -255,7 +255,7 @@ As rotas financeiras ficam dentro do restaurante, `/api/restaurantes/{id}/...`, 
 | GET | `.../relatorios/mensal` | Total por mês (`meses`, padrão 12) e média mensal |
 | GET | `.../relatorios/fornecedores` | Totais por fornecedor (`de`, `ate`) |
 | GET | `.../relatorios/despesas.csv`, `.../contas.csv` | Exportação para Excel |
-| GET, POST | `.../membros` | Equipe; adicionar exige ser proprietário (`email`, `papel`) |
+| GET, POST | `.../membros` | Equipe; adicionar exige ser proprietário (`email`, `papel`); 429 após muitos e-mails sem conta |
 | PUT, DELETE | `.../membros/{usuario_id}` | Muda o papel ou remove (qualquer um pode sair) |
 
 Valores em dinheiro são enviados e recebidos como texto com ponto decimal (`"1234.50"`), para não perder centavos.

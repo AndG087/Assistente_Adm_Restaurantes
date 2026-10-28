@@ -96,11 +96,26 @@ def _extrair_pdf(conteudo: bytes) -> ResultadoExtracao:
     try:
         textos = []
         for indice in range(min(len(pdf), maximo)):
-            imagem = pdf[indice].render(scale=_DPI_OCR / 72).to_pil()
+            pagina = pdf[indice]
+            imagem = pagina.render(scale=_escala_ocr(*pagina.get_size())).to_pil()
             textos.append(_ocr(imagem))
     finally:
         pdf.close()
     return ResultadoExtracao(_limpar("\n\n".join(textos)), "ocr")
+
+
+def _escala_ocr(largura_pt: float, altura_pt: float) -> float:
+    """Escala para renderizar a página a 300 DPI, reduzida se a imagem passaria de _MAXIMO_PIXELS.
+
+    O tamanho da página vem do próprio PDF: sem este teto, uma página declarada com metros de
+    lado viraria uma imagem de bilhões de pixels e esgotaria a memória.
+    """
+    escala = _DPI_OCR / 72
+    pixels = largura_pt * altura_pt * escala * escala
+    if pixels > _MAXIMO_PIXELS:
+        # 0,999: o renderizador arredonda largura e altura para cima.
+        escala *= (_MAXIMO_PIXELS / pixels) ** 0.5 * 0.999
+    return escala
 
 
 def _abrir_imagem(conteudo: bytes) -> Image.Image:

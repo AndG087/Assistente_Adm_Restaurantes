@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ApiError, type IAStatusResponse } from '../api'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ApiError, type Usuario } from '../api'
 import { AreaContext } from '../contexto'
-import { PAGINAS, useNavegacao, type Pagina } from '../hooks/useNavegacao'
+import { useNavegacao, type Pagina } from '../hooks/useNavegacao'
 import { useRestaurantes } from '../hooks/useRestaurantes'
+import type { StatusSistema } from '../hooks/useStatusSistema'
 import { Categorias } from '../paginas/Categorias'
 import { ContasPagar } from '../paginas/ContasPagar'
 import { Despesas } from '../paginas/Despesas'
@@ -11,23 +12,36 @@ import { Documentos } from '../paginas/Documentos'
 import { Fornecedores } from '../paginas/Fornecedores'
 import { Inicio } from '../paginas/Inicio'
 import { Relatorios } from '../paginas/Relatorios'
-import { formatarDocumento } from '../utils/formato'
+import { Cabecalho, Rodape } from './Cabecalho'
 import { ChatWindow } from './ChatWindow'
 import { FormRestaurante } from './FormRestaurante'
+import { Icone } from './Icone'
+import { Logo } from './Logo'
+import { MenuLateral } from './MenuLateral'
 
 interface AreaLogadaProps {
-  statusIA: IAStatusResponse | null
-  onFalhaIA: () => void
+  usuario: Usuario
+  status: StatusSistema
+  onSair: () => void
   onSessaoExpirada: () => void
 }
 
-const PAPEIS = { proprietario: 'Proprietário', membro: 'Membro' } as const
-
-export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogadaProps) {
+export function AreaLogada({ usuario, status, onSair, onSessaoExpirada }: AreaLogadaProps) {
   const restaurantes = useRestaurantes()
   const { pagina, irPara } = useNavegacao()
   const [criandoOutro, setCriandoOutro] = useState(false)
+  // Gaveta do menu no celular; na tela grande o menu fica sempre à mostra.
+  const [menuAberto, setMenuAberto] = useState(false)
   const { erro, selecionado } = restaurantes
+
+  useEffect(() => {
+    if (!menuAberto) return
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') setMenuAberto(false)
+    }
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [menuAberto])
 
   const sessaoExpirada = erro instanceof ApiError && erro.status === 401
   useEffect(() => {
@@ -43,23 +57,37 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
     [selecionado, onSessaoExpirada, recarregar],
   )
 
+  // Telas sem restaurante escolhido: topo simples, sem barra lateral.
+  const semMenu = (conteudo: ReactNode) => (
+    <>
+      <Cabecalho status={status} usuario={usuario} onSair={onSair} />
+      <main className="conteudo">{conteudo}</main>
+      <Rodape />
+    </>
+  )
+
   if (restaurantes.carregando) {
-    return <p className="carregando-pagina">Carregando restaurantes…</p>
+    // Sem cabeçalho: ele piscaria na tela por um instante antes de a barra lateral aparecer.
+    return (
+      <main className="conteudo">
+        <p className="carregando-pagina">Carregando restaurantes…</p>
+      </main>
+    )
   }
 
   if (erro) {
-    return (
+    return semMenu(
       <p className="alerta alerta--erro" role="alert">
         Não foi possível carregar seus restaurantes. {erro instanceof Error ? erro.message : ''}{' '}
         <button type="button" className="link" onClick={restaurantes.recarregar}>
           Tentar novamente
         </button>
-      </p>
+      </p>,
     )
   }
 
   if (!contexto || criandoOutro) {
-    return (
+    return semMenu(
       <FormRestaurante
         titulo={selecionado ? 'Novo restaurante' : 'Cadastre seu restaurante'}
         descricao={
@@ -72,7 +100,7 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
           setCriandoOutro(false)
         }}
         onCancelar={selecionado ? () => setCriandoOutro(false) : undefined}
-      />
+      />,
     )
   }
 
@@ -95,7 +123,7 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
       case 'equipe':
         return <Equipe />
       case 'assistente':
-        return <ChatWindow statusIA={statusIA} onFalha={onFalhaIA} onSessaoExpirada={onSessaoExpirada} />
+        return <ChatWindow statusIA={status.ia} onFalha={status.atualizar} onSessaoExpirada={onSessaoExpirada} />
       default:
         return <Inicio irPara={irPara} />
     }
@@ -103,53 +131,54 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
 
   return (
     <AreaContext.Provider value={contexto}>
-      <div className="area-logada">
-        <section className="cartao restaurante-atual" aria-label="Restaurante selecionado">
-          <label className="campo campo--em-linha">
-            <span className="campo__rotulo">Restaurante</span>
-            <select
-              className="campo__entrada"
-              value={restaurante.id}
-              onChange={(e) => restaurantes.selecionar(Number(e.target.value))}
-            >
-              {restaurantes.restaurantes.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <dl className="restaurante-atual__dados">
-            <div>
-              <dt>CNPJ</dt>
-              <dd>{restaurante.cnpj ? formatarDocumento(restaurante.cnpj) : 'Não informado'}</dd>
-            </div>
-            <div>
-              <dt>Seu papel</dt>
-              <dd>{PAPEIS[restaurante.papel]}</dd>
-            </div>
-          </dl>
-          <button type="button" className="botao botao--secundario" onClick={() => setCriandoOutro(true)}>
-            Novo restaurante
+      <div className="app-com-menu">
+        <div className="barra-movel">
+          <button
+            type="button"
+            className="barra-movel__menu"
+            aria-label="Abrir menu"
+            aria-expanded={menuAberto}
+            aria-controls="menu-lateral"
+            onClick={() => setMenuAberto(true)}
+          >
+            <Icone nome="menu" tamanho={24} />
           </button>
-        </section>
+          <Logo tamanho={28} />
+          <span className="barra-movel__nome">{restaurante.nome}</span>
+        </div>
 
-        <nav className="menu" aria-label="Seções">
-          {(Object.keys(PAGINAS) as Pagina[]).map((chave) => (
-            <a
-              key={chave}
-              href={`#/${chave}`}
-              className="menu__item"
-              aria-current={pagina === chave ? 'page' : undefined}
-            >
-              {PAGINAS[chave]}
-            </a>
-          ))}
-        </nav>
+        {menuAberto && (
+          <button
+            type="button"
+            className="menu-lateral__fundo"
+            aria-label="Fechar menu"
+            tabIndex={-1}
+            onClick={() => setMenuAberto(false)}
+          />
+        )}
 
-        {/* key: ao trocar de restaurante, a página recomeça do zero (filtros, formulários, conversa). */}
-        <div key={restaurante.id} className="area-logada__pagina">
-          {conteudo(pagina)}
+        <MenuLateral
+          pagina={pagina}
+          restaurantes={restaurantes.restaurantes}
+          restaurante={restaurante}
+          onSelecionarRestaurante={restaurantes.selecionar}
+          onNovoRestaurante={() => {
+            setMenuAberto(false)
+            setCriandoOutro(true)
+          }}
+          usuario={usuario}
+          status={status}
+          onSair={onSair}
+          aberto={menuAberto}
+          onFechar={() => setMenuAberto(false)}
+        />
+
+        <div className="app-com-menu__conteudo">
+          {/* key: ao trocar de restaurante, a página recomeça do zero (filtros, formulários, conversa). */}
+          <main key={restaurante.id} className="area-logada__pagina">
+            {conteudo(pagina)}
+          </main>
+          <Rodape />
         </div>
       </div>
     </AreaContext.Provider>

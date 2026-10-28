@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useArea } from '../contexto'
+import { useAcao } from '../hooks/useAcao'
 import { useCarregar } from '../hooks/useCarregar'
 import { salvarFornecedor } from '../recursos/cadastros'
 import {
@@ -131,13 +132,12 @@ export function ConferenciaDocumento({ documento, onConcluir }: ConferenciaDocum
 }
 
 function NovoFornecedor({ cnpj, onCriado }: { cnpj: string; onCriado: (f: { id: number; nome: string }) => void }) {
-  const { restaurante, mensagemDeErro } = useArea()
+  const { restaurante } = useArea()
   const [nome, setNome] = useState('')
-  const [erro, setErro] = useState<string | null>(null)
+  const { executar, ocupado, erro } = useAcao()
 
-  async function cadastrar() {
-    setErro(null)
-    try {
+  function cadastrar() {
+    return executar(async () => {
       const novo = await salvarFornecedor(restaurante.id, null, {
         nome,
         documento: cnpj,
@@ -147,9 +147,7 @@ function NovoFornecedor({ cnpj, onCriado }: { cnpj: string; onCriado: (f: { id: 
         ativo: true,
       })
       onCriado({ id: novo.id, nome: novo.nome })
-    } catch (e) {
-      setErro(mensagemDeErro(e))
-    }
+    })
   }
 
   return (
@@ -165,10 +163,10 @@ function NovoFornecedor({ cnpj, onCriado }: { cnpj: string; onCriado: (f: { id: 
         <button
           type="button"
           className="botao botao--secundario"
-          disabled={nome.trim().length < 2}
+          disabled={ocupado || nome.trim().length < 2}
           onClick={() => void cadastrar()}
         >
-          Cadastrar fornecedor
+          {ocupado ? 'Cadastrando…' : 'Cadastrar fornecedor'}
         </button>
       </div>
       {erro && (

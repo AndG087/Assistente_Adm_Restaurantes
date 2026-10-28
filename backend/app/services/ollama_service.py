@@ -19,7 +19,7 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 
 PROMPT_DO_SISTEMA = (
-    "Você é o Restaurante Admin AI, um assistente administrativo para restaurantes. "
+    "Você é o Caderninho, um assistente administrativo para restaurantes. "
     "Responda sempre em português do Brasil, de forma clara e objetiva. "
     "Nesta versão você NÃO tem acesso a dados financeiros, cadastros ou documentos do restaurante: "
     "nunca invente valores, saldos, despesas ou fornecedores. Se a pergunta depender desses dados, "

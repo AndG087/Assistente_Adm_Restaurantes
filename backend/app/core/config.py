@@ -15,7 +15,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Restaurante Admin AI"
+    app_name: str = "Caderninho"
     # Liga a faixa "Demonstração · dados fictícios" no frontend (ver iniciar_demonstracao.ps1).
     modo_demonstracao: bool = False
 
@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     sessao_duracao_horas: int = 12
     # Em produção com HTTPS deve ser True; localmente (HTTP) precisa ser False.
     cookie_seguro: bool = False
+    # Contra adivinhação de senha: falhas de login por e-mail e por IP, e cadastros por IP, dentro da janela.
+    login_maximo_falhas: int = 5
+    login_janela_minutos: int = 15
+    registro_maximo_por_ip: int = 10
+    registro_janela_minutos: int = 60
+    # Por hora, por proprietário: e-mails sem conta ao adicionar alguém à equipe.
+    equipe_maximo_emails_invalidos: int = 10
 
     # Ollama (IA local)
     ollama_url: str = "http://localhost:11434"

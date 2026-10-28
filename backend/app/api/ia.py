@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import obter_usuario_atual
+from app.api.deps import obter_usuario_atual, obter_usuario_opcional
+from app.models import Usuario
 from app.schemas.ia import ChatRequest, ChatResponse, IAStatusResponse
 from app.services.ollama_service import (
     OllamaError,
@@ -28,17 +29,21 @@ def mensagem_de_erro_do_ollama(erro: OllamaError, modelo: str) -> tuple[int, str
     return status.HTTP_502_BAD_GATEWAY, "A IA retornou uma resposta inesperada. Tente novamente."
 
 
+# Público para a tela de entrada mostrar se a IA está ligada; o nome do modelo só vai para quem está logado.
 @router.get("/status", response_model=IAStatusResponse)
-async def status_ia(servico: OllamaService = Depends(get_ollama_service)) -> IAStatusResponse:
+async def status_ia(
+    servico: OllamaService = Depends(get_ollama_service),
+    usuario: Usuario | None = Depends(obter_usuario_opcional),
+) -> IAStatusResponse:
     resultado = await servico.status()
     return IAStatusResponse(
         ollama_disponivel=resultado.ollama_disponivel,
-        modelo=resultado.modelo,
+        modelo=resultado.modelo if usuario else None,
         modelo_disponivel=resultado.modelo_disponivel,
     )
 
 
-# O chat exige login; o status continua público para a tela de entrada poder exibi-lo.
+# O chat exige login.
 @router.post("/chat", response_model=ChatResponse, dependencies=[Depends(obter_usuario_atual)])
 async def chat(
     requisicao: ChatRequest,

@@ -43,7 +43,8 @@ try {
         Write-Host "Usando a demonstração já existente (use -Recriar para começar do zero)." -ForegroundColor Cyan
     }
 
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "npm.cmd --prefix '$raiz\frontend' run dev"
+    # A pasta vai em -WorkingDirectory, e não dentro do comando: um apóstrofo no caminho quebraria as aspas.
+    Start-Process powershell -WorkingDirectory (Join-Path $raiz "frontend") -ArgumentList "-NoExit", "-Command", "npm.cmd run dev"
     Write-Host ""
     Write-Host "Abra http://127.0.0.1:5173  |  Login: demo@exemplo.com  |  Senha: demonstracao" -ForegroundColor Green
     Write-Host ""

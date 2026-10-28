@@ -140,3 +140,47 @@ def test_sessao_expirada_nao_vale(client, db):
     db.commit()
 
     assert client.get("/api/auth/eu").status_code == 401
+
+
+# --- limite de tentativas ---
+
+
+def _login(cliente, senha, email="ana@exemplo.com"):
+    return cliente.post("/api/auth/login", json={"email": email, "senha": senha})
+
+
+def test_login_bloqueia_depois_de_muitas_senhas_erradas(client_logado, client):
+    codigos = [_login(client, f"errada-{i}").status_code for i in range(5)]
+    assert codigos == [401] * 5
+
+    bloqueado = _login(client, SENHA)  # nem a senha certa entra durante o bloqueio
+    assert bloqueado.status_code == 429
+    assert "Muitas tentativas" in bloqueado.json()["detail"]
+    assert int(bloqueado.headers["retry-after"]) > 0
+
+
+def test_bloqueio_de_um_email_nao_afeta_outra_conta(client_logado, novo_cliente, client):
+    registrar(novo_cliente(), email="bia@exemplo.com", nome="Bia")
+    for i in range(5):
+        _login(client, f"errada-{i}")
+
+    assert _login(client, SENHA, email="bia@exemplo.com").status_code == 200
+
+
+def test_login_certo_zera_as_falhas(client_logado, client):
+    for i in range(4):
+        _login(client, f"errada-{i}")
+    assert _login(client, SENHA).status_code == 200
+    for i in range(4):
+        assert _login(client, f"errada-de-novo-{i}").status_code == 401
+
+
+def test_cadastro_tem_limite_por_ip(client, monkeypatch):
+    from app.api import auth as rotas_auth
+
+    monkeypatch.setattr(rotas_auth.cadastros_por_ip, "maximo", 2)
+    corpo = {"nome": "Pessoa", "senha": SENHA}
+    codigos = [
+        client.post("/api/auth/registrar", json=corpo | {"email": f"p{i}@exemplo.com"}).status_code for i in range(3)
+    ]
+    assert codigos == [201, 201, 429]

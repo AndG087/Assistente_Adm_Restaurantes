@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 
-from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante
+from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante, ou_404
 from app.core import tempo
 from app.models import ContaPagar
 from app.schemas.conta_pagar import (
@@ -18,7 +18,6 @@ from app.schemas.conta_pagar import (
 from app.schemas.financeiro import Referencia
 from app.services import conta_pagar_service
 from app.services.conta_pagar_service import FiltroContas
-from app.services.erros import OperacaoNaoPermitidaError, ReferenciaInvalidaError
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/contas-a-pagar", tags=["Contas a pagar"])
 
@@ -43,18 +42,7 @@ def _resposta(conta: ContaPagar, hoje: date) -> ContaPagarResponse:
 
 
 def _obter_ou_404(db: DbSession, vinculo: VinculoRestaurante, conta_id: int) -> ContaPagar:
-    conta = conta_pagar_service.obter(db, vinculo.restaurante_id, conta_id)
-    if conta is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Conta não encontrada.")
-    return conta
-
-
-def _conflito(erro: Exception) -> HTTPException:
-    return HTTPException(status.HTTP_409_CONFLICT, detail=str(erro))
-
-
-def _invalido(erro: Exception) -> HTTPException:
-    return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(erro))
+    return ou_404(conta_pagar_service.obter(db, vinculo.restaurante_id, conta_id), "Conta não encontrada.")
 
 
 @router.get("", response_model=ListaContasPagar)
@@ -71,7 +59,7 @@ def listar(
     deslocamento: Annotated[int, Query(ge=0)] = 0,
 ) -> ListaContasPagar:
     if de and ate and de > ate:
-        raise _invalido(ValueError("A data inicial é posterior à final."))
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="A data inicial é posterior à final.")
     filtro = FiltroContas(situacao, de, ate, categoria_id, fornecedor_id, (busca or "").strip() or None)
     contas, total, valor_total = conta_pagar_service.listar(db, vinculo.restaurante_id, filtro, limite, deslocamento)
     hoje = tempo.hoje()
@@ -95,10 +83,7 @@ def alertas(
 def criar(
     dados: ContaPagarCreate, db: DbSession, vinculo: VinculoRestaurante, usuario: UsuarioAtual
 ) -> ContaPagarResponse:
-    try:
-        conta = conta_pagar_service.criar(db, vinculo.restaurante_id, usuario.id, dados)
-    except ReferenciaInvalidaError as erro:
-        raise _invalido(erro) from None
+    conta = conta_pagar_service.criar(db, vinculo.restaurante_id, usuario.id, dados)
     return _resposta(conta, tempo.hoje())
 
 
@@ -112,22 +97,14 @@ def atualizar(
     dados: ContaPagarCreate, db: DbSession, vinculo: VinculoRestaurante, conta_id: IdPositivo
 ) -> ContaPagarResponse:
     conta = _obter_ou_404(db, vinculo, conta_id)
-    try:
-        conta = conta_pagar_service.atualizar(db, conta, dados)
-    except ReferenciaInvalidaError as erro:
-        raise _invalido(erro) from None
-    except OperacaoNaoPermitidaError as erro:
-        raise _conflito(erro) from None
+    conta = conta_pagar_service.atualizar(db, conta, dados)
     return _resposta(conta, tempo.hoje())
 
 
 @router.delete("/{conta_id}", status_code=status.HTTP_204_NO_CONTENT)
 def excluir(db: DbSession, vinculo: VinculoRestaurante, conta_id: IdPositivo) -> None:
     conta = _obter_ou_404(db, vinculo, conta_id)
-    try:
-        conta_pagar_service.excluir(db, conta)
-    except OperacaoNaoPermitidaError as erro:
-        raise _conflito(erro) from None
+    conta_pagar_service.excluir(db, conta)
 
 
 @router.post("/{conta_id}/pagar", response_model=ContaPagarResponse)
@@ -139,18 +116,12 @@ def pagar(
     dados: Annotated[PagamentoRequest | None, Body()] = None,
 ) -> ContaPagarResponse:
     conta = _obter_ou_404(db, vinculo, conta_id)
-    try:
-        conta = conta_pagar_service.pagar(db, conta, usuario.id, dados.data_pagamento if dados else None)
-    except OperacaoNaoPermitidaError as erro:
-        raise _conflito(erro) from None
+    conta = conta_pagar_service.pagar(db, conta, usuario.id, dados.data_pagamento if dados else None)
     return _resposta(conta, tempo.hoje())
 
 
 @router.post("/{conta_id}/desfazer-pagamento", response_model=ContaPagarResponse)
 def desfazer_pagamento(db: DbSession, vinculo: VinculoRestaurante, conta_id: IdPositivo) -> ContaPagarResponse:
     conta = _obter_ou_404(db, vinculo, conta_id)
-    try:
-        conta = conta_pagar_service.desfazer_pagamento(db, conta)
-    except OperacaoNaoPermitidaError as erro:
-        raise _conflito(erro) from None
+    conta = conta_pagar_service.desfazer_pagamento(db, conta)
     return _resposta(conta, tempo.hoje())

@@ -3,37 +3,17 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
-from pydantic import BaseModel
 
 from app.api.deps import DbSession, VinculoRestaurante
 from app.core import tempo
 from app.schemas.conta_pagar import FiltroSituacao
-from app.schemas.financeiro import DinheiroResposta, Referencia
+from app.schemas.financeiro import Referencia
+from app.schemas.relatorio import EvolucaoMensal, TotalFornecedor, TotalMesResponse
 from app.services import relatorio_service
 from app.services.conta_pagar_service import FiltroContas
 from app.services.despesa_service import FiltroDespesas
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/relatorios", tags=["Relatórios"])
-
-
-class TotalMesResponse(BaseModel):
-    ano: int
-    mes: int
-    rotulo: str  # "out/2026"
-    quantidade: int
-    valor_total: DinheiroResposta
-
-
-class EvolucaoMensal(BaseModel):
-    meses: list[TotalMesResponse]
-    # Média dos meses completos (sem o mês atual, que ainda está em andamento).
-    media_mensal: DinheiroResposta
-
-
-class TotalFornecedor(BaseModel):
-    fornecedor: Referencia | None
-    quantidade: int
-    valor_total: DinheiroResposta
 
 
 def _validar_periodo(de: date | None, ate: date | None) -> None:

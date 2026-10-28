@@ -14,6 +14,7 @@ import argparse
 import random
 import shutil
 import sys
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -21,6 +22,7 @@ from sqlalchemy import make_url
 from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401  (registra as tabelas)
+from app.core import tempo
 from app.core.config import get_settings
 from app.core.database import Base, SessionLocal, engine
 from app.models import Usuario
@@ -38,6 +40,8 @@ from app.services import (
 )
 from tests.arquivos import pdf_com_texto, png_com_texto
 
+# Credenciais públicas de propósito (aparecem na tela e no roteiro de apresentação).
+# Só valem no banco *_demo, que este script se recusa a criar em qualquer outro banco.
 EMAIL = "demo@exemplo.com"
 SENHA = "demonstracao"
 MESES_DE_HISTORICO = 6
@@ -72,6 +76,46 @@ def _dias_do_mes(ano: int, mes: int, ate: date) -> list[date]:
     return dias
 
 
+@dataclass
+class _Lancador:
+    """Cria despesas e contas do restaurante da demonstração, referindo categorias e fornecedores pelo nome."""
+
+    db: Session
+    restaurante_id: int
+    usuario_id: int
+    categorias: dict[str, int]
+    fornecedores: dict[str, int]
+
+    def despesa(self, dia: date, descricao: str, valor: float, categoria: str | None, fornecedor: str | None, nf=None):
+        despesa_service.criar(
+            self.db,
+            self.restaurante_id,
+            self.usuario_id,
+            DespesaCreate(
+                descricao=descricao,
+                valor=_dinheiro(valor),
+                data=dia,
+                categoria_id=self.categorias[categoria] if categoria else None,
+                fornecedor_id=self.fornecedores[fornecedor] if fornecedor else None,
+                numero_documento=nf,
+            ),
+        )
+
+    def conta(self, vencimento: date, descricao: str, valor: float, categoria: str, fornecedor: str | None = None):
+        return conta_pagar_service.criar(
+            self.db,
+            self.restaurante_id,
+            self.usuario_id,
+            ContaPagarCreate(
+                descricao=descricao,
+                valor=_dinheiro(valor),
+                data_vencimento=vencimento,
+                categoria_id=self.categorias[categoria],
+                fornecedor_id=self.fornecedores[fornecedor] if fornecedor else None,
+            ),
+        )
+
+
 def popular(db: Session, hoje: date, nome_restaurante: str, com_documentos: bool = True) -> dict[str, int]:
     """Cria usuário, restaurante e lançamentos fictícios. Devolve contagens para conferência."""
     sorteio = random.Random(2026)  # sempre os mesmos dados para a mesma data
@@ -81,119 +125,29 @@ def popular(db: Session, hoje: date, nome_restaurante: str, com_documentos: bool
     rid = restaurante.id
 
     categoria_service.criar(db, rid, "Música ao vivo e eventos")
-    categorias = {c.nome: c.id for c in categoria_service.listar(db, rid, incluir_inativas=False)}
-    fornecedores = {
-        chave: fornecedor_service.criar(db, rid, FornecedorCreate(nome=nome, documento=documento)).id
-        for chave, (nome, documento) in FORNECEDORES.items()
-    }
-
-    def despesa(dia: date, descricao: str, valor: float, categoria: str | None, fornecedor: str | None, nf=None):
-        despesa_service.criar(
-            db,
-            rid,
-            usuario.id,
-            DespesaCreate(
-                descricao=descricao,
-                valor=_dinheiro(valor),
-                data=dia,
-                categoria_id=categorias[categoria] if categoria else None,
-                fornecedor_id=fornecedores[fornecedor] if fornecedor else None,
-                numero_documento=nf,
-            ),
-        )
-
-    def conta(vencimento: date, descricao: str, valor: float, categoria: str, fornecedor: str | None = None):
-        return conta_pagar_service.criar(
-            db,
-            rid,
-            usuario.id,
-            ContaPagarCreate(
-                descricao=descricao,
-                valor=_dinheiro(valor),
-                data_vencimento=vencimento,
-                categoria_id=categorias[categoria],
-                fornecedor_id=fornecedores[fornecedor] if fornecedor else None,
-            ),
-        )
+    lancador = _Lancador(
+        db,
+        rid,
+        usuario.id,
+        categorias={c.nome: c.id for c in categoria_service.listar(db, rid, incluir_inativas=False)},
+        fornecedores={
+            chave: fornecedor_service.criar(db, rid, FornecedorCreate(nome=nome, documento=documento)).id
+            for chave, (nome, documento) in FORNECEDORES.items()
+        },
+    )
 
     indice_atual = hoje.year * 12 + hoje.month - 1
     for indice in range(indice_atual - MESES_DE_HISTORICO + 1, indice_atual + 1):
         ano, mes = divmod(indice, 12)
         mes += 1
-        mes_atual = indice == indice_atual
         # Dezembro é mais movimentado (festas de fim de ano).
         movimento = 1.3 if mes == 12 else 1.0
+        _compras_do_dia_a_dia(lancador, sorteio, ano, mes, hoje, movimento)
+        _despesas_avulsas_do_mes(lancador, sorteio, ano, mes, hoje)
+        _contas_mensais(lancador, sorteio, ano, mes, hoje, movimento, mes_atual=indice == indice_atual)
+    _contas_para_os_alertas(lancador, hoje)
 
-        # --- compras do dia a dia (despesas) ---
-        for dia in _dias_do_mes(ano, mes, hoje):
-            semana = dia.weekday()  # 0 = segunda
-            if semana == 1:  # terça: chopp, carnes, peixes, gelo
-                despesa(dia, "Chopp pilsen - barris de 50 L", sorteio.uniform(1800, 2600) * movimento,
-                        "Bebidas", "chopp", f"NF {sorteio.randint(7000, 9999)}")
-                despesa(dia, "Carnes (picanha, alcatra, frango)", sorteio.uniform(2200, 3200) * movimento,
-                        "Alimentos e insumos", "carnes")
-                despesa(dia, "Peixes e camarão", sorteio.uniform(900, 1500) * movimento,
-                        "Alimentos e insumos", "peixes")
-                despesa(dia, "Gelo em cubos e em barra", sorteio.uniform(250, 380) * movimento, "Bebidas", "gelo")
-            if semana in (1, 4):  # terça e sexta: hortifrúti e pães
-                despesa(dia, "Hortifrúti: tomate, cebola, limão, verduras", sorteio.uniform(380, 650) * movimento,
-                        "Alimentos e insumos", "hortifruti")
-                despesa(dia, "Pães e massas", sorteio.uniform(120, 220), "Alimentos e insumos", "paes")
-            if semana == 3 and dia.day <= 14:  # quinta, duas vezes por mês: vinhos e embalagens
-                despesa(dia, "Vinhos e espumantes", sorteio.uniform(1200, 2000) * movimento, "Bebidas", "vinhos")
-                despesa(dia, "Embalagens para delivery", sorteio.uniform(300, 500),
-                        "Embalagens e descartáveis", "embalagens")
-            if semana == 5:  # sábado: música ao vivo e gás
-                despesa(dia, "Cachê da banda - música ao vivo no terraço", sorteio.uniform(800, 1200),
-                        "Música ao vivo e eventos", "banda")
-                if dia.day <= 7 or 15 <= dia.day <= 21:
-                    despesa(dia, "Botijões de gás P45 (2 un.)", 1050, "Gás", "gas")
-
-        primeiro_dia_util = date(ano, mes, 3)
-        if primeiro_dia_util <= hoje:
-            despesa(primeiro_dia_util, "Produtos de limpeza", sorteio.uniform(600, 900), "Limpeza e higiene", "limpeza")
-            despesa(primeiro_dia_util, "Impulsionamento no Instagram", sorteio.uniform(300, 500), "Marketing", None)
-        dia_manutencao = date(ano, mes, 18)
-        if dia_manutencao <= hoje:
-            reparo, valor = sorteio.choice([
-                ("Manutenção do ar-condicionado", 450), ("Conserto da chopeira", 680),
-                ("Troca de lâmpadas do terraço", 260), ("Manutenção da câmara fria", 1150),
-            ])
-            despesa(dia_manutencao, reparo, valor, "Manutenção", None)
-            # Algumas compras sem categoria, para mostrar o filtro "Sem categoria" e a sugestão.
-            despesa(dia_manutencao, "Compra no atacarejo", sorteio.uniform(150, 400), None, None)
-
-        # --- contas mensais (vencimento) ---
-        mensais = [
-            (5, "Aluguel do imóvel", 6500, "Aluguel", None),
-            (5, "Folha de pagamento", 18500 * (1.15 if mes == 12 else 1), "Folha de pagamento", None),
-            (5, "Vale-transporte da equipe", 1200, "Folha de pagamento", None),
-            (10, "Honorários contábeis", 900, "Serviços e assinaturas", "contador"),
-            (12, "Conta de energia (Neoenergia)", sorteio.uniform(2300, 3100) * movimento, "Energia elétrica", None),
-            (15, "Conta de água (Compesa)", sorteio.uniform(450, 600), "Água e esgoto", None),
-            (20, "Internet e telefone", 199.90, "Serviços e assinaturas", None),
-            (20, "DAS Simples Nacional", sorteio.uniform(3800, 4600) * movimento, "Impostos e taxas", None),
-        ]
-        for dia_vencimento, descricao, valor, categoria, fornecedor in mensais:
-            vencimento = date(ano, mes, dia_vencimento)
-            nova = conta(vencimento, descricao, valor, categoria, fornecedor)
-            # Meses anteriores: tudo pago, no vencimento ou um pouco antes.
-            # Mês atual: paga só o que venceu, EXCETO a energia (fica vencida para a demonstração).
-            pagar = vencimento < hoje and not (mes_atual and "energia" in descricao)
-            if not mes_atual or pagar:
-                if vencimento <= hoje:
-                    pagamento = vencimento - timedelta(days=sorteio.choice([0, 0, 1, 2]))
-                    conta_pagar_service.pagar(db, nova, usuario.id, pagamento)
-
-    # Contas extras para os alertas, qualquer que seja o dia: uma vencida, uma vencendo hoje e outras a vencer.
-    conta(hoje - timedelta(days=2), "Boleto Hortifruti Fresco", 1340, "Alimentos e insumos", "hortifruti")
-    conta(hoje, "Boleto Distribuidora Chopp Gelado", 2380, "Bebidas", "chopp")
-    conta(hoje + timedelta(days=3), "Manutenção preventiva da câmara fria", 1150, "Manutenção")
-    conta(hoje + timedelta(days=6), "Cachê - show especial de sexta", 1500, "Música ao vivo e eventos", "banda")
-
-    documentos = 0
-    if com_documentos:
-        documentos = _documentos(db, restaurante, usuario, hoje)
+    documentos = _documentos(db, restaurante, usuario, hoje) if com_documentos else 0
 
     return {
         "restaurante_id": rid,
@@ -203,6 +157,83 @@ def popular(db: Session, hoje: date, nome_restaurante: str, com_documentos: bool
         )[1],
         "documentos": documentos,
     }
+
+
+def _compras_do_dia_a_dia(
+    lanca: _Lancador, sorteio: random.Random, ano: int, mes: int, hoje: date, movimento: float
+) -> None:
+    for dia in _dias_do_mes(ano, mes, hoje):
+        semana = dia.weekday()  # 0 = segunda
+        if semana == 1:  # terça: chopp, carnes, peixes, gelo
+            lanca.despesa(dia, "Chopp pilsen - barris de 50 L", sorteio.uniform(1800, 2600) * movimento,
+                          "Bebidas", "chopp", f"NF {sorteio.randint(7000, 9999)}")
+            lanca.despesa(dia, "Carnes (picanha, alcatra, frango)", sorteio.uniform(2200, 3200) * movimento,
+                          "Alimentos e insumos", "carnes")
+            lanca.despesa(dia, "Peixes e camarão", sorteio.uniform(900, 1500) * movimento,
+                          "Alimentos e insumos", "peixes")
+            lanca.despesa(dia, "Gelo em cubos e em barra", sorteio.uniform(250, 380) * movimento, "Bebidas", "gelo")
+        if semana in (1, 4):  # terça e sexta: hortifrúti e pães
+            lanca.despesa(dia, "Hortifrúti: tomate, cebola, limão, verduras",
+                          sorteio.uniform(380, 650) * movimento, "Alimentos e insumos", "hortifruti")
+            lanca.despesa(dia, "Pães e massas", sorteio.uniform(120, 220), "Alimentos e insumos", "paes")
+        if semana == 3 and dia.day <= 14:  # quinta, duas vezes por mês: vinhos e embalagens
+            lanca.despesa(dia, "Vinhos e espumantes", sorteio.uniform(1200, 2000) * movimento, "Bebidas", "vinhos")
+            lanca.despesa(dia, "Embalagens para delivery", sorteio.uniform(300, 500),
+                          "Embalagens e descartáveis", "embalagens")
+        if semana == 5:  # sábado: música ao vivo e gás
+            lanca.despesa(dia, "Cachê da banda - música ao vivo no terraço", sorteio.uniform(800, 1200),
+                          "Música ao vivo e eventos", "banda")
+            if dia.day <= 7 or 15 <= dia.day <= 21:
+                lanca.despesa(dia, "Botijões de gás P45 (2 un.)", 1050, "Gás", "gas")
+
+
+def _despesas_avulsas_do_mes(lanca: _Lancador, sorteio: random.Random, ano: int, mes: int, hoje: date) -> None:
+    primeiro_dia_util = date(ano, mes, 3)
+    if primeiro_dia_util <= hoje:
+        lanca.despesa(primeiro_dia_util, "Produtos de limpeza", sorteio.uniform(600, 900),
+                      "Limpeza e higiene", "limpeza")
+        lanca.despesa(primeiro_dia_util, "Impulsionamento no Instagram", sorteio.uniform(300, 500), "Marketing", None)
+    dia_manutencao = date(ano, mes, 18)
+    if dia_manutencao <= hoje:
+        reparo, valor = sorteio.choice([
+            ("Manutenção do ar-condicionado", 450), ("Conserto da chopeira", 680),
+            ("Troca de lâmpadas do terraço", 260), ("Manutenção da câmara fria", 1150),
+        ])
+        lanca.despesa(dia_manutencao, reparo, valor, "Manutenção", None)
+        # Algumas compras sem categoria, para mostrar o filtro "Sem categoria" e a sugestão.
+        lanca.despesa(dia_manutencao, "Compra no atacarejo", sorteio.uniform(150, 400), None, None)
+
+
+def _contas_mensais(
+    lanca: _Lancador, sorteio: random.Random, ano: int, mes: int, hoje: date, movimento: float, mes_atual: bool
+) -> None:
+    mensais = [
+        (5, "Aluguel do imóvel", 6500, "Aluguel", None),
+        (5, "Folha de pagamento", 18500 * (1.15 if mes == 12 else 1), "Folha de pagamento", None),
+        (5, "Vale-transporte da equipe", 1200, "Folha de pagamento", None),
+        (10, "Honorários contábeis", 900, "Serviços e assinaturas", "contador"),
+        (12, "Conta de energia (Neoenergia)", sorteio.uniform(2300, 3100) * movimento, "Energia elétrica", None),
+        (15, "Conta de água (Compesa)", sorteio.uniform(450, 600), "Água e esgoto", None),
+        (20, "Internet e telefone", 199.90, "Serviços e assinaturas", None),
+        (20, "DAS Simples Nacional", sorteio.uniform(3800, 4600) * movimento, "Impostos e taxas", None),
+    ]
+    for dia_vencimento, descricao, valor, categoria, fornecedor in mensais:
+        vencimento = date(ano, mes, dia_vencimento)
+        nova = lanca.conta(vencimento, descricao, valor, categoria, fornecedor)
+        # Meses anteriores: tudo pago, no vencimento ou um pouco antes.
+        # Mês atual: paga só o que venceu, EXCETO a energia (fica vencida para a demonstração).
+        pagar = vencimento < hoje and not (mes_atual and "energia" in descricao)
+        if (not mes_atual or pagar) and vencimento <= hoje:
+            pagamento = vencimento - timedelta(days=sorteio.choice([0, 0, 1, 2]))
+            conta_pagar_service.pagar(lanca.db, nova, lanca.usuario_id, pagamento)
+
+
+def _contas_para_os_alertas(lanca: _Lancador, hoje: date) -> None:
+    """Qualquer que seja o dia: uma vencida, uma vencendo hoje e outras a vencer."""
+    lanca.conta(hoje - timedelta(days=2), "Boleto Hortifruti Fresco", 1340, "Alimentos e insumos", "hortifruti")
+    lanca.conta(hoje, "Boleto Distribuidora Chopp Gelado", 2380, "Bebidas", "chopp")
+    lanca.conta(hoje + timedelta(days=3), "Manutenção preventiva da câmara fria", 1150, "Manutenção")
+    lanca.conta(hoje + timedelta(days=6), "Cachê - show especial de sexta", 1500, "Música ao vivo e eventos", "banda")
 
 
 def _documentos(db: Session, restaurante, usuario: Usuario, hoje: date) -> int:
@@ -260,7 +291,7 @@ def main() -> int:
 
     with SessionLocal() as db:
         _limpar(db)
-        resumo = popular(db, date.today(), argumentos.nome.strip(), not argumentos.sem_documentos)
+        resumo = popular(db, tempo.hoje(), argumentos.nome.strip(), not argumentos.sem_documentos)
     engine.dispose()
 
     print(f"Demonstração criada: {resumo['despesas']} despesas, {resumo['contas']} contas, "

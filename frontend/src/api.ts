@@ -10,7 +10,8 @@ export interface HealthResponse {
 
 export interface IAStatusResponse {
   ollama_disponivel: boolean
-  modelo: string
+  // null antes do login: o backend só revela qual modelo está em uso para quem está logado.
+  modelo: string | null
   modelo_disponivel: boolean
 }
 
@@ -71,7 +72,7 @@ export async function requisitar<T>(caminho: string, init?: RequestInit): Promis
       headers: { ...(ehJson ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
     })
   } catch {
-    throw new ApiError('Não foi possível conectar ao backend. Verifique se ele está em execução.', null)
+    throw new ApiError('Não foi possível conectar ao Caderninho. Verifique se ele está aberto neste computador.', null)
   }
 
   if (!resposta.ok) {
@@ -103,7 +104,7 @@ async function mensagemDeErro(resposta: Response): Promise<[string, Record<strin
     // Corpo sem JSON (ex.: proxy sem backend): cai na mensagem genérica abaixo.
   }
   if (resposta.status >= 500) {
-    return ['O backend não respondeu corretamente. Verifique se ele está em execução.', null]
+    return ['O Caderninho não respondeu corretamente. Tente de novo em instantes.', null]
   }
   if (resposta.status === 422) {
     return ['Os dados enviados são inválidos. Verifique e tente novamente.', null]
@@ -132,6 +133,12 @@ const TRADUCOES: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/at least (\d+) characters?/, (m) => `deve ter pelo menos ${m[1]} caracteres`],
   [/at most (\d+) characters?/, (m) => `deve ter no máximo ${m[1]} caracteres`],
   [/Field required/, () => 'é obrigatório'],
+  [/valid date/, () => 'precisa ser uma data válida'],
+  [/valid (decimal|number|integer)/, () => 'precisa ser um número'],
+  [/no more than (\d+) decimal places?/, (m) => `deve ter no máximo ${m[1]} casas decimais`],
+  [/greater than or equal to (\S+)/, (m) => `deve ser maior ou igual a ${m[1]}`],
+  [/greater than (\S+)/, (m) => `deve ser maior que ${m[1]}`],
+  [/less than or equal to (\S+)/, (m) => `deve ser no máximo ${m[1]}`],
   [/^Value error, (.*)$/, (m) => m[1]],
 ]
 

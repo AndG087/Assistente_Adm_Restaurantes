@@ -41,6 +41,13 @@ def _data(texto: str | None) -> date | None:
         return None
 
 
+def _travar_conferivel(db: Session, documento: Documento, mensagem: str) -> None:
+    """Relê o documento com SELECT ... FOR UPDATE: um pedido simultâneo espera o commit deste."""
+    db.refresh(documento, with_for_update=True)
+    if documento.status not in _CONFERIVEIS:
+        raise OperacaoNaoPermitidaError(mensagem)
+
+
 def preparar(db: Session, documento: Documento) -> Conferencia:
     dados = documento.dados_extraidos or {}
     fornecedor = _fornecedor_pelo_cnpj(db, documento.restaurante_id, dados.get("cnpj_emitente"))
@@ -60,18 +67,20 @@ def preparar(db: Session, documento: Documento) -> Conferencia:
 
 
 def confirmar(db: Session, documento: Documento, usuario_id: int, dados: ConfirmacaoDocumento) -> Documento:
-    """Cria a despesa ou a conta com os dados conferidos pelo usuário e marca o documento como concluído."""
-    if documento.status not in _CONFERIVEIS:
-        raise OperacaoNaoPermitidaError("Este documento já foi conferido ou descartado.")
+    """Cria a despesa ou a conta com os dados conferidos pelo usuário e marca o documento como concluído.
+
+    Tudo num único commit, com o documento travado: duas confirmações simultâneas não geram dois lançamentos.
+    """
+    _travar_conferivel(db, documento, "Este documento já foi conferido ou descartado.")
 
     campos = dados.model_dump(exclude={"tipo", "data"})
     if dados.tipo == "despesa":
-        despesa = despesa_service.criar(
+        despesa = despesa_service.novo(
             db, documento.restaurante_id, usuario_id, DespesaCreate(**campos, data=dados.data)
         )
         documento.despesa_id = despesa.id
     else:
-        conta = conta_pagar_service.criar(
+        conta = conta_pagar_service.novo(
             db, documento.restaurante_id, usuario_id, ContaPagarCreate(**campos, data_vencimento=dados.data)
         )
         documento.conta_pagar_id = conta.id
@@ -82,8 +91,7 @@ def confirmar(db: Session, documento: Documento, usuario_id: int, dados: Confirm
 
 
 def descartar(db: Session, documento: Documento) -> Documento:
-    if documento.status not in _CONFERIVEIS:
-        raise OperacaoNaoPermitidaError("Só documentos ainda não conferidos podem ser descartados.")
+    _travar_conferivel(db, documento, "Só documentos ainda não conferidos podem ser descartados.")
     documento.status = StatusDocumento.DESCARTADO
     db.commit()
     db.refresh(documento)

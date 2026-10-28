@@ -121,4 +121,36 @@ describe('Contas a pagar', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('A data de pagamento não pode estar no futuro.')
   })
+
+  it('não deixa confirmar o pagamento com a data vazia', async () => {
+    const fetchFalso = simularBackend({
+      'GET /api/restaurantes/10/contas-a-pagar': () => json({ itens: [conta({})], total: 1, valor_total: '380.00' }),
+    })
+    renderizarNaArea(<ContasPagar />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Pagar Boleto do gás' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Confirmar pagamento' })
+    await userEvent.clear(within(dialogo).getByLabelText('Data do pagamento'))
+
+    expect(within(dialogo).getByRole('button', { name: 'Confirmar pagamento' })).toBeDisabled()
+    expect(dialogo).toHaveTextContent('Informe a data do pagamento.')
+    expect(chamadas(fetchFalso, 'POST', '/api/restaurantes/10/contas-a-pagar/1/pagar')).toHaveLength(0)
+  })
+
+  it('traduz o erro de validação do backend dizendo qual campo', async () => {
+    simularBackend({
+      'GET /api/restaurantes/10/contas-a-pagar': () => json({ itens: [conta({})], total: 1, valor_total: '380.00' }),
+      'POST /api/restaurantes/10/contas-a-pagar/1/pagar': () =>
+        json(
+          { detail: [{ loc: ['body', 'data_pagamento'], msg: 'Input should be a valid date or datetime, input is too short' }] },
+          422,
+        ),
+    })
+    renderizarNaArea(<ContasPagar />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Pagar Boleto do gás' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pagamento' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Data de pagamento precisa ser uma data válida.')
+  })
 })

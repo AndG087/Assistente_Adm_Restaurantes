@@ -1,25 +1,18 @@
 import { useState, type FormEvent } from 'react'
 import { useArea } from '../contexto'
+import { useAcao } from '../hooks/useAcao'
 import { useCarregar } from '../hooks/useCarregar'
 import { atualizarCategoria, criarCategoria, listarCategorias, type Categoria } from '../recursos/cadastros'
 
 export function Categorias() {
-  const { restaurante, mensagemDeErro } = useArea()
+  const { restaurante } = useArea()
   const lista = useCarregar(`categorias-${restaurante.id}`, () => listarCategorias(restaurante.id, true))
   const [nova, setNova] = useState('')
   const [editando, setEditando] = useState<{ id: number; nome: string } | null>(null)
-  const [erro, setErro] = useState<string | null>(null)
+  const { executar: executarAcao, ocupado, erro } = useAcao()
 
-  async function executar(acao: () => Promise<unknown>): Promise<boolean> {
-    setErro(null)
-    try {
-      await acao()
-      lista.recarregar()
-      return true
-    } catch (e) {
-      setErro(mensagemDeErro(e))
-      return false
-    }
+  function executar(acao: () => Promise<unknown>): Promise<boolean> {
+    return executarAcao(acao, lista.recarregar)
   }
 
   async function adicionar(evento: FormEvent) {
@@ -53,7 +46,7 @@ export function Categorias() {
             required
           />
         </label>
-        <button type="submit" className="botao botao--primario">
+        <button type="submit" className="botao botao--primario" disabled={ocupado}>
           Adicionar
         </button>
       </form>
@@ -80,7 +73,7 @@ export function Categorias() {
                     required
                     autoFocus
                   />
-                  <button type="submit" className="link">
+                  <button type="submit" className="link" disabled={ocupado}>
                     Salvar
                   </button>
                   <button type="button" className="link" onClick={() => setEditando(null)}>
@@ -106,6 +99,7 @@ export function Categorias() {
                       type="button"
                       className="link"
                       aria-label={`${c.ativo ? 'Inativar' : 'Reativar'} ${c.nome}`}
+                      disabled={ocupado}
                       onClick={() => void executar(() => atualizarCategoria(restaurante.id, c.id, c.nome, !c.ativo))}
                     >
                       {c.ativo ? 'Inativar' : 'Reativar'}

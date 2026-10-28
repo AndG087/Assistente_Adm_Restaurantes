@@ -3,13 +3,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
 
-from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante
+from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante, ou_404
 from app.models import Despesa
 from app.schemas.despesa import DespesaCreate, DespesaResponse, ListaDespesas, ResumoDespesas, TotalCategoria
 from app.schemas.financeiro import Referencia
 from app.services import despesa_service
 from app.services.despesa_service import FiltroDespesas
-from app.services.erros import OperacaoNaoPermitidaError, ReferenciaInvalidaError
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/despesas", tags=["Despesas"])
 
@@ -22,10 +21,7 @@ def _validar_periodo(de: date | None, ate: date | None) -> None:
 
 
 def _obter_ou_404(db: DbSession, vinculo: VinculoRestaurante, despesa_id: int) -> Despesa:
-    despesa = despesa_service.obter(db, vinculo.restaurante_id, despesa_id)
-    if despesa is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Despesa não encontrada.")
-    return despesa
+    return ou_404(despesa_service.obter(db, vinculo.restaurante_id, despesa_id), "Despesa não encontrada.")
 
 
 @router.get("", response_model=ListaDespesas)
@@ -70,10 +66,7 @@ def resumo(
 
 @router.post("", response_model=DespesaResponse, status_code=status.HTTP_201_CREATED)
 def criar(dados: DespesaCreate, db: DbSession, vinculo: VinculoRestaurante, usuario: UsuarioAtual) -> Despesa:
-    try:
-        return despesa_service.criar(db, vinculo.restaurante_id, usuario.id, dados)
-    except ReferenciaInvalidaError as erro:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(erro)) from None
+    return despesa_service.criar(db, vinculo.restaurante_id, usuario.id, dados)
 
 
 @router.get("/{despesa_id}", response_model=DespesaResponse)
@@ -84,18 +77,10 @@ def obter(db: DbSession, vinculo: VinculoRestaurante, despesa_id: IdPositivo) ->
 @router.put("/{despesa_id}", response_model=DespesaResponse)
 def atualizar(dados: DespesaCreate, db: DbSession, vinculo: VinculoRestaurante, despesa_id: IdPositivo) -> Despesa:
     despesa = _obter_ou_404(db, vinculo, despesa_id)
-    try:
-        return despesa_service.atualizar(db, despesa, dados)
-    except ReferenciaInvalidaError as erro:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(erro)) from None
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    return despesa_service.atualizar(db, despesa, dados)
 
 
 @router.delete("/{despesa_id}", status_code=status.HTTP_204_NO_CONTENT)
 def excluir(db: DbSession, vinculo: VinculoRestaurante, despesa_id: IdPositivo) -> None:
     despesa = _obter_ou_404(db, vinculo, despesa_id)
-    try:
-        despesa_service.excluir(db, despesa)
-    except OperacaoNaoPermitidaError as erro:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+    despesa_service.excluir(db, despesa)

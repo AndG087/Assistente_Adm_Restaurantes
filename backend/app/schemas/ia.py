@@ -17,5 +17,5 @@ class ChatResponse(BaseModel):
 
 class IAStatusResponse(BaseModel):
     ollama_disponivel: bool
-    modelo: str
+    modelo: str | None  # None quando ninguém está logado
     modelo_disponivel: bool

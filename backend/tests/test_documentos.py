@@ -165,3 +165,18 @@ def test_isolamento_entre_restaurantes(client_logado, restaurante_id, intruso):
     assert intruso.get(url(rid_intruso)).json() == []
     # O mesmo arquivo pode ser enviado por outro restaurante (a regra de repetição é por restaurante).
     assert enviar(intruso, rid_intruso, pdf_com_texto(NOTA)).status_code == 201
+
+
+def test_pdf_com_pagina_gigante_e_renderizado_com_teto_de_pixels(monkeypatch):
+    from app.services import extracao_texto
+
+    # Página de 5 m x 5 m (14400 pt, o máximo do formato) e sem texto: vai para o OCR.
+    pdf = pdf_com_texto([]).replace(b"/MediaBox [0 0 595 842]", b"/MediaBox [0 0 14400 14400]")
+    tamanhos = []
+    monkeypatch.setattr(extracao_texto, "_ocr", lambda imagem: tamanhos.append(imagem.size) or "")
+
+    extracao_texto.extrair_texto(pdf, "application/pdf")
+
+    largura, altura = tamanhos[0]
+    assert largura * altura <= extracao_texto._MAXIMO_PIXELS
+    assert largura > 1000  # reduzida, mas ainda legível

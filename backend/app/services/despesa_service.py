@@ -83,10 +83,17 @@ def obter(db: Session, restaurante_id: int, despesa_id: int) -> Despesa | None:
     return db.scalar(select(Despesa).where(Despesa.id == despesa_id, Despesa.restaurante_id == restaurante_id))
 
 
-def criar(db: Session, restaurante_id: int, usuario_id: int, dados: DespesaCreate) -> Despesa:
+def novo(db: Session, restaurante_id: int, usuario_id: int, dados: DespesaCreate) -> Despesa:
+    """Valida e adiciona à sessão sem commit, para quem precisa gravar junto com outra mudança."""
     referencias.validar(db, restaurante_id, dados.categoria_id, dados.fornecedor_id)
     despesa = Despesa(restaurante_id=restaurante_id, criado_por_id=usuario_id, **dados.model_dump())
     db.add(despesa)
+    db.flush()  # gera o id
+    return despesa
+
+
+def criar(db: Session, restaurante_id: int, usuario_id: int, dados: DespesaCreate) -> Despesa:
+    despesa = novo(db, restaurante_id, usuario_id, dados)
     db.commit()
     db.refresh(despesa)
     return despesa

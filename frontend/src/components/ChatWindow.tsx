@@ -14,7 +14,7 @@ interface ChatWindowProps {
 function avisoDaIA(statusIA: IAStatusResponse | null): string | null {
   if (!statusIA) return null
   if (!statusIA.ollama_disponivel) {
-    return 'O Ollama não está em execução. Perguntas sobre os dados (gastos, contas) continuam funcionando; a conversa geral fica indisponível até iniciar o Ollama.'
+    return 'A IA local (Ollama) está desligada. Perguntas sobre os dados (gastos, contas) continuam funcionando; a conversa geral volta quando ela for ligada.'
   }
   if (!statusIA.modelo_disponivel) {
     return `O modelo "${statusIA.modelo}" não está instalado. Perguntas sobre os dados continuam funcionando; para a conversa geral, instale com: ollama pull ${statusIA.modelo}`

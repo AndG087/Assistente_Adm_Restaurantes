@@ -1,33 +1,18 @@
 from functools import partial
-from typing import Annotated, Literal
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel
 
 from app.api.deps import DbSession, VinculoRestaurante
 from app.api.ia import mensagem_de_erro_do_ollama
 from app.core import tempo
+from app.schemas.assistente import RespostaAssistente, TabelaResponse
 from app.schemas.ia import ChatRequest
 from app.services.assistente import servico
 from app.services.ollama_service import OllamaError, OllamaService, get_ollama_service
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/assistente", tags=["Assistente"])
-
-
-class TabelaResponse(BaseModel):
-    colunas: list[str]
-    linhas: list[list[str]]
-
-
-class RespostaAssistente(BaseModel):
-    resposta: str
-    # dados: veio do banco · conversa: modelo sem acesso aos dados · ajuda: pergunta não entendida
-    origem: Literal["dados", "conversa", "ajuda"]
-    # O que foi consultado, para o usuário conferir a interpretação (ex.: "Total de despesas · 01/10 a 31/10").
-    consulta: str | None = None
-    interpretado_por: Literal["regras", "ia"] | None = None
-    tabela: TabelaResponse | None = None
 
 
 @router.post("", response_model=RespostaAssistente)
