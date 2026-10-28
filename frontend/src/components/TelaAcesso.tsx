@@ -35,7 +35,10 @@ function Vitrine() {
           </li>
         ))}
       </ul>
-      <p className="vitrine__privacidade">Seus dados ficam no seu computador. Nada é enviado para a internet.</p>
+      {/* Verdade tanto rodando no computador do restaurante quanto num servidor na internet. */}
+      <p className="vitrine__privacidade">
+        Cada restaurante enxerga só os próprios dados, e você baixa suas despesas e contas em planilha quando quiser.
+      </p>
     </section>
   )
 }

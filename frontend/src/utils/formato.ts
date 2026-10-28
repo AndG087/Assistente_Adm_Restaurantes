@@ -59,3 +59,27 @@ export function mesDe(referencia = new Date()): { de: string; ate: string } {
   const fim = new Date(referencia.getFullYear(), referencia.getMonth() + 1, 0)
   return { de: paraIso(inicio), ate: paraIso(fim) }
 }
+
+export interface Periodo {
+  de: string
+  ate: string
+}
+
+/**
+ * Este mês até a data de referência e o mesmo pedaço do mês anterior, para comparar sem distorção:
+ * o mês em andamento contra o mês anterior inteiro pareceria sempre mais barato.
+ * Se o mês anterior for mais curto, a comparação termina no último dia dele (31/03 → 01/02 a 28/02).
+ */
+export function periodosComparaveis(referencia = new Date()): { atual: Periodo; anterior: Periodo } {
+  const ano = referencia.getFullYear()
+  const mes = referencia.getMonth()
+  const dia = referencia.getDate()
+  const ultimoDiaDoAnterior = new Date(ano, mes, 0).getDate()
+  return {
+    atual: { de: paraIso(new Date(ano, mes, 1)), ate: paraIso(new Date(ano, mes, dia)) },
+    anterior: {
+      de: paraIso(new Date(ano, mes - 1, 1)),
+      ate: paraIso(new Date(ano, mes - 1, Math.min(dia, ultimoDiaDoAnterior))),
+    },
+  }
+}

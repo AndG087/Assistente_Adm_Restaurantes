@@ -43,5 +43,5 @@ export function Cabecalho({ status, tema, usuario, onSair }: CabecalhoProps) {
 }
 
 export function Rodape() {
-  return <footer className="rodape">Executado localmente · Nenhum dado é enviado para serviços externos</footer>
+  return <footer className="rodape">Caderninho · Cada restaurante enxerga só os próprios dados</footer>
 }

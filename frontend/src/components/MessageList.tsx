@@ -84,8 +84,7 @@ export function MessageList({ mensagens, aguardandoResposta, onSugestao }: Messa
       <div className="mensagens mensagens--vazia">
         <p className="mensagens__dica-titulo">Pergunte sobre as finanças do restaurante</p>
         <p className="mensagens__dica">
-          Os valores vêm do banco de dados e são calculados pelo sistema; a IA local só ajuda a entender a
-          pergunta. Nada é enviado para a internet.
+          Os valores vêm do banco de dados e são calculados pelo sistema; a IA só ajuda a entender a pergunta.
         </p>
         <div className="sugestoes" aria-label="Perguntas de exemplo">
           {SUGESTOES.map((pergunta) => (

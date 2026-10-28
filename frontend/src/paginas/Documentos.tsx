@@ -124,8 +124,9 @@ export function Documentos() {
       </header>
 
       <p className="pagina-secao__ajuda">
-        Envie notas fiscais, boletos ou comprovantes em PDF, JPG ou PNG (até 10 MB). O texto é lido neste computador,
-        sem enviar nada para a internet; depois você confere os dados e gera a despesa ou a conta a pagar.
+        Envie notas fiscais, boletos ou comprovantes em PDF, JPG ou PNG (até 10 MB). O próprio Caderninho lê o texto,
+        sem passar seus documentos para serviços de terceiros; depois você confere os dados e gera a despesa ou a conta
+        a pagar.
       </p>
 
       {aviso && (

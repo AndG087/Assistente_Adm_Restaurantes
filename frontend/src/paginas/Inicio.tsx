@@ -125,7 +125,7 @@ export function Inicio({ irPara }: InicioProps) {
             ) : (
               <BarrasTotais
                 rotulo="Despesas por categoria"
-                mostrarPercentual
+                total={r.valor_total}
                 itens={r.por_categoria.map((c) => ({
                   chave: String(c.categoria?.id ?? 'sem'),
                   nome: c.categoria?.nome ?? 'Sem categoria',
