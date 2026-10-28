@@ -111,3 +111,24 @@ def client_logado(novo_cliente: Callable[[], TestClient]) -> TestClient:
     cliente = novo_cliente()
     registrar(cliente)
     return cliente
+
+
+def criar_restaurante(cliente: TestClient, nome: str = "Cantina da Ana") -> int:
+    resposta = cliente.post("/api/restaurantes", json={"nome": nome})
+    assert resposta.status_code == 201, resposta.text
+    return resposta.json()["id"]
+
+
+@pytest.fixture
+def restaurante_id(client_logado: TestClient) -> int:
+    """Restaurante do usuário de client_logado."""
+    return criar_restaurante(client_logado)
+
+
+@pytest.fixture
+def intruso(novo_cliente: Callable[[], TestClient]) -> TestClient:
+    """Outro usuário, com o próprio restaurante, para testar o isolamento."""
+    cliente = novo_cliente()
+    registrar(cliente, email="intruso@exemplo.com", nome="Intruso")
+    criar_restaurante(cliente, "Restaurante do Intruso")
+    return cliente

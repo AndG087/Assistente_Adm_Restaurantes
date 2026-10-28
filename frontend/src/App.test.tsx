@@ -1,13 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
-
-type Rota = (init?: RequestInit) => Response | Promise<Response>
-
-function json(corpo: unknown, status = 200): Response {
-  return new Response(JSON.stringify(corpo), { status, headers: { 'Content-Type': 'application/json' } })
-}
+import { chamadas as chamadasA, json, simularBackend as simular, type Rota } from './test/backendFalso'
 
 const ANA = { id: 1, nome: 'Ana Souza', email: 'ana@exemplo.com' }
 const CANTINA = { id: 10, nome: 'Cantina da Ana', cnpj: '11222333000181', papel: 'proprietario' }
@@ -15,6 +10,15 @@ const CANTINA = { id: 10, nome: 'Cantina da Ana', cnpj: '11222333000181', papel:
 const ROTAS_PADRAO: Record<string, Rota> = {
   'GET /api/health': () => json({ status: 'ok', banco_de_dados: 'ok' }),
   'GET /api/ia/status': () => json({ ollama_disponivel: true, modelo: 'llama3.2:1b', modelo_disponivel: true }),
+  'GET /api/restaurantes/*/contas-a-pagar/alertas': () =>
+    json({
+      hoje: '2026-10-20',
+      dias: 7,
+      vencidas: { quantidade: 0, valor_total: '0.00' },
+      vencem_hoje: { quantidade: 0, valor_total: '0.00' },
+      proximos_dias: { quantidade: 0, valor_total: '0.00' },
+    }),
+  'GET /api/restaurantes/*/despesas/resumo': () => json({ quantidade: 0, valor_total: '0.00', por_categoria: [] }),
 }
 
 // Rotas de um usuário já logado com um restaurante.
@@ -28,26 +32,25 @@ const NAO_LOGADO: Record<string, Rota> = {
 }
 
 function simularBackend(rotas: Record<string, Rota>) {
-  const todas = { ...ROTAS_PADRAO, ...rotas }
-  const fetchFalso = vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) => {
-    const rota = todas[`${init?.method ?? 'GET'} ${String(entrada)}`]
-    if (!rota) throw new TypeError('Failed to fetch')
-    return rota(init)
-  })
-  vi.stubGlobal('fetch', fetchFalso)
-  return fetchFalso
+  return simular({ ...ROTAS_PADRAO, ...rotas })
 }
 
 function chamadas(fetchFalso: ReturnType<typeof simularBackend>, metodo: string, url: string) {
-  return fetchFalso.mock.calls.filter(([u, init]) => u === url && (init?.method ?? 'GET') === metodo)
+  return chamadasA(fetchFalso, metodo, url).map((c) => [c.url.pathname, c.init] as const)
+}
+
+async function abrirAssistente() {
+  await userEvent.click(await screen.findByRole('link', { name: 'Assistente' }))
 }
 
 async function enviarNoChat(texto: string) {
+  await abrirAssistente()
   await userEvent.type(await screen.findByLabelText('Mensagem para a IA'), texto)
   await userEvent.click(screen.getByRole('button', { name: 'Enviar' }))
 }
 
 beforeEach(() => {
+  window.location.hash = ''
   try {
     localStorage.clear()
   } catch {
@@ -153,7 +156,8 @@ describe('Acesso', () => {
     expect(within(painel).getByRole('combobox')).toHaveDisplayValue('Cantina da Ana')
     expect(within(painel).getByText('11.222.333/0001-81')).toBeInTheDocument()
     expect(within(painel).getByText('Proprietário')).toBeInTheDocument()
-    expect(screen.getByLabelText('Mensagem para a IA')).toBeInTheDocument()
+    // Depois do cadastro, a área logada abre na página inicial.
+    expect(await screen.findByRole('heading', { name: 'Vencimentos' })).toBeInTheDocument()
 
     const [, init] = chamadas(fetchFalso, 'POST', '/api/restaurantes')[0]
     expect(JSON.parse(String(init?.body))).toEqual({ nome: 'Cantina da Ana', cnpj: '11.222.333/0001-81' })
@@ -198,6 +202,7 @@ describe('Chat', () => {
     })
 
     render(<App />)
+    await abrirAssistente()
 
     expect(await screen.findByText(/ollama pull llama3.2:1b/)).toBeInTheDocument()
   })

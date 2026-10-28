@@ -4,7 +4,15 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 
 **Tudo roda no computador local**, com ferramentas gratuitas: nenhum serviço pago, API externa ou banco hospedado. A IA é executada pelo [Ollama](https://docs.ollama.com/).
 
-> **Estado atual — etapa 2:** contas de usuário (cadastro, login, logout), cadastro de restaurantes com isolamento por usuário e chat com a IA local (exige login). A IA ainda **não** acessa dados financeiros, não cadastra nada e não executa ações.
+> **Estado atual — etapa 5.** Já funciona:
+>
+> - contas de usuário (cadastro, login, logout) e restaurantes, com isolamento total entre restaurantes;
+> - fornecedores e categorias financeiras (cada restaurante novo já vem com 14 categorias padrão);
+> - despesas com filtros por período, categoria e texto, e totais por categoria calculados no banco;
+> - contas a pagar com situação (vencida, vence hoje, a vencer, paga), pagamento que gera a despesa automaticamente e alertas de vencimento na página inicial;
+> - chat com a IA local (exige login).
+>
+> A IA ainda **não** acessa dados financeiros, não cadastra nada e não executa ações. Próximos passos: importação de documentos com OCR e consultas da IA aos dados.
 
 ## Tecnologias
 
@@ -28,11 +36,11 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 .
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # rotas (health, auth, restaurantes, ia) e dependências de acesso (deps.py)
-│   │   ├── core/         # configurações, banco, senhas e tokens
-│   │   ├── models/       # tabelas: usuarios, restaurantes, membros_restaurante, sessoes
-│   │   ├── schemas/      # validação de entrada e saída (Pydantic)
-│   │   ├── services/     # regras de negócio e integrações (auth, restaurantes, ollama)
+│   │   ├── api/          # rotas por recurso e dependências de acesso (deps.py)
+│   │   ├── core/         # configurações, banco, senhas, tokens e data/hora
+│   │   ├── models/       # tabelas (usuários, restaurantes, fornecedores, categorias, despesas, contas…)
+│   │   ├── schemas/      # validação de entrada e saída (Pydantic) e validadores de CPF/CNPJ
+│   │   ├── services/     # regras de negócio e integração com o Ollama
 │   │   └── main.py       # aplicação FastAPI
 │   ├── alembic/          # migrações do banco
 │   ├── tests/            # testes do backend
@@ -40,9 +48,12 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 │   └── requirements.txt
 ├── frontend/
 │   └── src/
-│       ├── components/   # TelaAcesso, AreaLogada, FormRestaurante, Cabecalho, chat…
-│       ├── hooks/        # useSessao, useRestaurantes, useStatusSistema
-│       └── api.ts        # único ponto de comunicação com o backend
+│       ├── paginas/      # Início, Despesas, Contas a pagar, Fornecedores, Categorias
+│       ├── components/   # TelaAcesso, AreaLogada, FormLancamento, Cabecalho, chat…
+│       ├── hooks/        # useSessao, useRestaurantes, useCarregar, useNavegacao…
+│       ├── recursos/     # funções de acesso à API por recurso
+│       ├── utils/        # formatação de dinheiro, datas e documentos
+│       └── api.ts        # requisições ao backend e tratamento de erros
 └── docs/decisoes/        # registro das decisões de arquitetura
 ```
 
@@ -173,6 +184,25 @@ Ambos escutam apenas em `127.0.0.1`: não ficam acessíveis pela rede.
 | POST | `/api/ia/chat` | sim | Envia `{"mensagem": "..."}` e recebe `{"resposta": "...", "modelo": "..."}` |
 
 A sessão é um cookie `HttpOnly` enviado automaticamente pelo navegador. Detalhes em [`docs/decisoes/003-autenticacao-e-isolamento.md`](docs/decisoes/003-autenticacao-e-isolamento.md).
+
+As rotas financeiras ficam dentro do restaurante, `/api/restaurantes/{id}/...`, e todas exigem login e vínculo com o restaurante (sem vínculo, a resposta é 404):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET, POST | `.../fornecedores` | Lista (`busca`, `incluir_inativos`) e cria fornecedores |
+| GET, PUT | `.../fornecedores/{id}` | Consulta e altera (inclusive `ativo`) |
+| GET, POST | `.../categorias` | Lista (`incluir_inativas`) e cria categorias |
+| PUT | `.../categorias/{id}` | Renomeia ou ativa/inativa |
+| GET, POST | `.../despesas` | Lista (`de`, `ate`, `categoria_id`, `sem_categoria`, `fornecedor_id`, `busca`, `limite`, `deslocamento`) com `total` e `valor_total`; cria |
+| GET | `.../despesas/resumo` | Totais por categoria no período (`de`, `ate`) |
+| GET, PUT, DELETE | `.../despesas/{id}` | Consulta, altera e exclui |
+| GET, POST | `.../contas-a-pagar` | Lista (`situacao` = `pendentes`, `vencidas`, `pagas` ou `todas`, mais filtros) e cria |
+| GET | `.../contas-a-pagar/alertas` | Vencidas, que vencem hoje e nos próximos `dias` (padrão 7) |
+| GET, PUT, DELETE | `.../contas-a-pagar/{id}` | Consulta, altera e exclui (só pendentes) |
+| POST | `.../contas-a-pagar/{id}/pagar` | Marca como paga (`data_pagamento`, padrão hoje) e cria a despesa |
+| POST | `.../contas-a-pagar/{id}/desfazer-pagamento` | Volta para pendente e remove a despesa gerada |
+
+Valores em dinheiro são enviados e recebidos como texto com ponto decimal (`"1234.50"`), para não perder centavos.
 
 ## Testes
 

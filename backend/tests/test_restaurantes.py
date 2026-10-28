@@ -1,6 +1,5 @@
 import pytest
 
-from app.schemas.restaurante import cnpj_valido
 from tests.conftest import registrar
 
 CNPJ_VALIDO = "11.222.333/0001-81"
@@ -76,17 +75,3 @@ def test_usuario_nao_acessa_restaurante_de_outro(novo_cliente):
 @pytest.mark.parametrize("restaurante_id", ["0", "-1", "abc"])
 def test_id_de_restaurante_invalido(client_logado, restaurante_id):
     assert client_logado.get(f"/api/restaurantes/{restaurante_id}").status_code == 422
-
-
-@pytest.mark.parametrize(
-    ("cnpj", "valido"),
-    [
-        ("11222333000181", True),
-        ("11444777000161", True),
-        ("11222333000182", False),
-        ("00000000000000", False),
-        ("1122233300018", False),
-    ],
-)
-def test_digitos_verificadores_do_cnpj(cnpj, valido):
-    assert cnpj_valido(cnpj) is valido

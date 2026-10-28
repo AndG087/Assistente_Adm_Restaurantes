@@ -1,0 +1,40 @@
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Path, status
+
+from app.api.deps import DbSession, VinculoRestaurante
+from app.models import CategoriaFinanceira
+from app.schemas.categoria import CategoriaCreate, CategoriaResponse, CategoriaUpdate
+from app.services import categoria_service
+from app.services.erros import RegistroDuplicadoError
+
+router = APIRouter(prefix="/restaurantes/{restaurante_id}/categorias", tags=["Categorias financeiras"])
+
+
+@router.get("", response_model=list[CategoriaResponse])
+def listar(db: DbSession, vinculo: VinculoRestaurante, incluir_inativas: bool = False) -> list[CategoriaFinanceira]:
+    return categoria_service.listar(db, vinculo.restaurante_id, incluir_inativas)
+
+
+@router.post("", response_model=CategoriaResponse, status_code=status.HTTP_201_CREATED)
+def criar(dados: CategoriaCreate, db: DbSession, vinculo: VinculoRestaurante) -> CategoriaFinanceira:
+    try:
+        return categoria_service.criar(db, vinculo.restaurante_id, dados.nome)
+    except RegistroDuplicadoError as erro:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+
+
+@router.put("/{categoria_id}", response_model=CategoriaResponse)
+def atualizar(
+    dados: CategoriaUpdate,
+    db: DbSession,
+    vinculo: VinculoRestaurante,
+    categoria_id: Annotated[int, Path(gt=0)],
+) -> CategoriaFinanceira:
+    categoria = categoria_service.obter(db, vinculo.restaurante_id, categoria_id)
+    if categoria is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
+    try:
+        return categoria_service.atualizar(db, categoria, dados.nome, dados.ativo)
+    except RegistroDuplicadoError as erro:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None

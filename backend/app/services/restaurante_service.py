@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import MembroRestaurante, PapelMembro, Restaurante, Usuario
+from app.services.categoria_service import categorias_padrao
 
 
 def listar_do_usuario(db: Session, usuario: Usuario) -> list[MembroRestaurante]:
@@ -18,10 +19,12 @@ def listar_do_usuario(db: Session, usuario: Usuario) -> list[MembroRestaurante]:
 
 
 def criar(db: Session, usuario: Usuario, nome: str, cnpj: str | None) -> MembroRestaurante:
-    """Cria o restaurante e torna o usuário seu proprietário, na mesma transação."""
+    """Cria o restaurante, torna o usuário proprietário e cria as categorias padrão, na mesma transação."""
     restaurante = Restaurante(nome=nome, cnpj=cnpj)
     vinculo = MembroRestaurante(usuario=usuario, restaurante=restaurante, papel=PapelMembro.PROPRIETARIO)
     db.add_all([restaurante, vinculo])
+    db.flush()  # gera o id do restaurante
+    db.add_all(categorias_padrao(restaurante.id))
     db.commit()
     return vinculo
 

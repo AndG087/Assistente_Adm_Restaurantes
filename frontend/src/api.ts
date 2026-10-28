@@ -41,7 +41,23 @@ export class ApiError extends Error {
   }
 }
 
-async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
+type ValorConsulta = string | number | boolean | null | undefined
+
+/** Monta "/caminho?a=1&b=2", ignorando parâmetros vazios. */
+export function comConsulta(caminho: string, parametros: Record<string, ValorConsulta>): string {
+  const busca = new URLSearchParams()
+  for (const [chave, valor] of Object.entries(parametros)) {
+    if (valor !== null && valor !== undefined && valor !== '' && valor !== false) busca.set(chave, String(valor))
+  }
+  const texto = busca.toString()
+  return texto ? `${caminho}?${texto}` : caminho
+}
+
+export function enviarJson(metodo: 'POST' | 'PUT', corpo: unknown): RequestInit {
+  return { method: metodo, body: JSON.stringify(corpo) }
+}
+
+export async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
   let resposta: Response
   try {
     resposta = await fetch(caminho, {
@@ -89,6 +105,15 @@ const NOMES_DOS_CAMPOS: Record<string, string> = {
   senha: 'Senha',
   cnpj: 'CNPJ',
   mensagem: 'Mensagem',
+  documento: 'CPF/CNPJ',
+  telefone: 'Telefone',
+  observacoes: 'Observações',
+  descricao: 'Descrição',
+  valor: 'Valor',
+  data: 'Data',
+  data_vencimento: 'Vencimento',
+  data_pagamento: 'Data de pagamento',
+  numero_documento: 'Nº do documento',
 }
 
 const TRADUCOES: [RegExp, (m: RegExpMatchArray) => string][] = [
