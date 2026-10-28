@@ -78,7 +78,9 @@ describe('Documentos', () => {
       'src',
       '/api/restaurantes/10/documentos/1/arquivo',
     )
-    expect(screen.getByText('11.222.333/0001-81')).toBeInTheDocument()
+    // O CNPJ também aparece no aviso de fornecedor não cadastrado; aqui interessa a lista do que foi lido.
+    const lidos = document.querySelector<HTMLElement>('.dados-extraidos')!
+    expect(within(lidos).getByText('11.222.333/0001-81')).toBeInTheDocument()
   })
 
   it('avisa quando o arquivo já foi enviado', async () => {

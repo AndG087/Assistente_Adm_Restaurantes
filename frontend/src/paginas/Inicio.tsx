@@ -1,3 +1,4 @@
+import { BarrasTotais } from '../components/BarrasTotais'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
 import type { Pagina } from '../hooks/useNavegacao'
@@ -20,7 +21,6 @@ export function Inicio({ irPara }: InicioProps) {
   )
 
   const a = alertas.dados
-  const maior = resumo.dados?.por_categoria[0]?.valor_total
 
   return (
     <div className="inicio">
@@ -81,20 +81,14 @@ export function Inicio({ irPara }: InicioProps) {
                   em {resumo.dados.quantidade} {resumo.dados.quantidade === 1 ? 'despesa' : 'despesas'}
                 </span>
               </p>
-              <ul className="barras" aria-label="Despesas por categoria">
-                {resumo.dados.por_categoria.map((c) => (
-                  <li key={c.categoria?.id ?? 'sem'} className="barras__item">
-                    <span className="barras__nome">{c.categoria?.nome ?? 'Sem categoria'}</span>
-                    <span className="barras__valor">{formatarMoeda(c.valor_total)}</span>
-                    <span className="barras__trilho" aria-hidden="true">
-                      <span
-                        className="barras__preenchimento"
-                        style={{ width: `${(Number(c.valor_total) / Number(maior)) * 100}%` }}
-                      />
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <BarrasTotais
+                rotulo="Despesas por categoria"
+                itens={resumo.dados.por_categoria.map((c) => ({
+                  chave: String(c.categoria?.id ?? 'sem'),
+                  nome: c.categoria?.nome ?? 'Sem categoria',
+                  valor: c.valor_total,
+                }))}
+              />
             </>
           ))}
         <button type="button" className="link" onClick={() => irPara('despesas')}>

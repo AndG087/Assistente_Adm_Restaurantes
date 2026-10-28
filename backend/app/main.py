@@ -10,6 +10,7 @@ from app.api import (
     fornecedores,
     health,
     ia,
+    relatorios,
     restaurantes,
     sugestoes,
 )
@@ -28,6 +29,7 @@ ROTEADORES = (
     documentos,
     sugestoes,
     assistente,
+    relatorios,
     ia,
 )
 for modulo in ROTEADORES:

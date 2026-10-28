@@ -9,6 +9,7 @@ import { Despesas } from '../paginas/Despesas'
 import { Documentos } from '../paginas/Documentos'
 import { Fornecedores } from '../paginas/Fornecedores'
 import { Inicio } from '../paginas/Inicio'
+import { Relatorios } from '../paginas/Relatorios'
 import { formatarDocumento } from '../utils/formato'
 import { ChatWindow } from './ChatWindow'
 import { FormRestaurante } from './FormRestaurante'
@@ -80,6 +81,8 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
         return <ContasPagar />
       case 'documentos':
         return <Documentos />
+      case 'relatorios':
+        return <Relatorios />
       case 'fornecedores':
         return <Fornecedores />
       case 'categorias':

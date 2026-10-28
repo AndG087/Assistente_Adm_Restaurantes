@@ -5,6 +5,7 @@ export const PAGINAS = {
   despesas: 'Despesas',
   contas: 'Contas a pagar',
   documentos: 'Documentos',
+  relatorios: 'Relatórios',
   fornecedores: 'Fornecedores',
   categorias: 'Categorias',
   assistente: 'Assistente',
