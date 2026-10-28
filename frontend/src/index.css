@@ -1,45 +1,96 @@
-/* Tokens de design e estilos base
+/* Design system do Caderninho: tokens globais e estilos base.
  *
- * Identidade do Caderninho: fundo branco-gelo, caneta azul-tinta (cor principal) e azul céu
- * (cor secundária: ícones, gráficos, item ativo, foco). Vermelho e laranja ficam reservados
- * para "vencida" e "vence hoje", para não confundir.
+ * Cores: fundo branco-gelo, azul-tinta como cor principal e azul céu como destaque
+ * (ícones, gráficos, item ativo, foco). Vermelho e laranja ficam reservados para
+ * "vencida" e "vence hoje", para não confundir com ações.
  *
- * O azul céu puro (#267bf1) tem contraste 4:1 no branco: serve para ícones e barras, não para
- * texto miúdo (mínimo 4,5:1). Texto em azul céu usa --cor-secundaria-texto (#1a66d2, 5,3:1).
+ * Contraste: toda cor usada em TEXTO passa de 4,5:1 sobre o card branco e sobre o fundo.
+ * Algumas cores têm duas versões: a "forte" (ícones, faixas, barras: precisam só de 3:1)
+ * e a de texto, um tom mais fundo. Ex.: azul céu #267bf1 (4:1) para barras e
+ * #1a66d2 (5,3:1) para texto; sucesso #16a34a (3,3:1) e #15803d (5:1).
+ *
+ * Breakpoints (media queries não aceitam variáveis CSS, então ficam documentados aqui):
+ *   celular  até 640px · tablet até 900px (menu vira gaveta) · notebook até 1280px · desktop acima
  */
 
 :root {
+  /* Superfícies e texto */
   --cor-fundo: #ddd9ce;
-  --cor-superficie: #fffdf8;
-  --cor-superficie-suave: #faf6ee;
-  --cor-borda: #e6dece;
-  --cor-texto: #1f2733;
-  --cor-texto-suave: #635d52;
-  --cor-primaria: #24426e;
-  --cor-primaria-hover: #1a3254;
+  --cor-superficie: #ffffff;
+  --cor-superficie-suave: #f8fafc;
+  --cor-borda: #e2e8f0;
+  --cor-borda-forte: #cbd5e1;
+  --cor-texto: #172b4d;
+  --cor-texto-suave: #4b5563;
+
+  /* Marca */
+  --cor-primaria: #244775;
+  --cor-primaria-hover: #1b365a;
   --cor-primaria-contraste: #ffffff;
-  --cor-primaria-fundo: #e8eef8;
+  --cor-primaria-fundo: #e8eef7;
   --cor-secundaria: #267bf1;
   --cor-secundaria-texto: #1a66d2;
-  --cor-secundaria-fundo: #e2edfd;
+  --cor-secundaria-fundo: #e3eefd;
   --cor-margem: #d64545;
-  --cor-mensagem-usuario: #24426e;
+  --cor-mensagem-usuario: #244775;
   --cor-mensagem-usuario-texto: #ffffff;
-  --cor-mensagem-ia: #f1ece1;
+  --cor-mensagem-ia: #f1f5f9;
 
+  /* Situações: texto (padrão), forte (ícones/faixas) e fundo (selos) */
   --cor-ok: #15803d;
-  --cor-ok-fundo: #e8f5ec;
-  --cor-alerta: #b45309;
-  --cor-alerta-fundo: #fdf3e3;
-  --cor-erro: #b91c1c;
+  --cor-ok-forte: #16a34a;
+  --cor-ok-fundo: #e9f7ef;
+  --cor-alerta: #c2410c;
+  --cor-alerta-forte: #ea580c;
+  --cor-alerta-fundo: #fff1e6;
+  --cor-erro: #dc2626;
+  --cor-erro-forte: #dc2626;
   --cor-erro-fundo: #fdecec;
-  --cor-neutra: #6b6558;
-  --cor-neutra-fundo: #f1ece1;
+  --cor-neutra: #475569;
+  --cor-neutra-fundo: #f1f5f9;
 
-  --raio: 14px;
-  --raio-pequeno: 10px;
-  --sombra: 0 1px 2px rgb(60 45 20 / 6%), 0 4px 16px rgb(60 45 20 / 7%);
+  /* Tipografia */
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --texto-xs: 0.75rem;
+  --texto-sm: 0.875rem;
+  --texto-base: 1rem;
+  --texto-lg: 1.125rem;
+  --texto-xl: 1.375rem;
+  --texto-2xl: 1.75rem;
+  --texto-3xl: 2.25rem;
+  --peso-medio: 500;
+  --peso-forte: 650;
+  --peso-titulo: 750;
+
+  /* Espaçamentos (múltiplos de 4px) */
+  --espaco-1: 4px;
+  --espaco-2: 8px;
+  --espaco-3: 12px;
+  --espaco-4: 16px;
+  --espaco-5: 20px;
+  --espaco-6: 24px;
+  --espaco-8: 32px;
+  --espaco-10: 40px;
+
+  /* Bordas, raios e sombras */
+  --borda: 1px solid var(--cor-borda);
+  --raio-pequeno: 8px;
+  --raio: 12px;
+  --raio-grande: 16px;
+  --raio-pilula: 999px;
+  --sombra-1: 0 1px 2px rgb(15 23 42 / 6%), 0 1px 3px rgb(15 23 42 / 4%);
+  --sombra-2: 0 4px 12px rgb(15 23 42 / 8%), 0 2px 4px rgb(15 23 42 / 4%);
+  --sombra-3: 0 16px 40px rgb(15 23 42 / 18%);
+  --sombra: var(--sombra-1);
+
+  /* Movimento */
+  --transicao-rapida: 120ms ease;
+  --transicao: 200ms ease;
+
+  /* Larguras */
+  --largura-menu: 264px;
+  --largura-conteudo: 1280px;
+  --largura-formulario: 440px;
 
   color-scheme: light;
   font-family: var(--fonte);
@@ -54,12 +105,13 @@
    tema do sistema. Assim a demonstração abre igual para todo mundo, no claro. */
 :root[data-tema='escuro'] {
   color-scheme: dark;
-  --cor-fundo: #12161c;
-  --cor-superficie: #1a1f27;
-  --cor-superficie-suave: #1f252e;
-  --cor-borda: #2e3642;
-  --cor-texto: #ece7dd;
-  --cor-texto-suave: #aaa396;
+  --cor-fundo: #0f141b;
+  --cor-superficie: #171d26;
+  --cor-superficie-suave: #1c232e;
+  --cor-borda: #2a3442;
+  --cor-borda-forte: #3a4656;
+  --cor-texto: #e8edf4;
+  --cor-texto-suave: #a3afbf;
   --cor-primaria: #8db4f2;
   --cor-primaria-hover: #b2cdf8;
   --cor-primaria-contraste: #0d1a2e;
@@ -70,18 +122,23 @@
   --cor-margem: #f07878;
   --cor-mensagem-usuario: #2a4570;
   --cor-mensagem-usuario-texto: #eef4ff;
-  --cor-mensagem-ia: #232a34;
+  --cor-mensagem-ia: #222a36;
 
   --cor-ok: #4ade80;
+  --cor-ok-forte: #22c55e;
   --cor-ok-fundo: #12291b;
-  --cor-alerta: #fbbf24;
-  --cor-alerta-fundo: #2e2410;
+  --cor-alerta: #fb923c;
+  --cor-alerta-forte: #f97316;
+  --cor-alerta-fundo: #2e1d10;
   --cor-erro: #f87171;
+  --cor-erro-forte: #ef4444;
   --cor-erro-fundo: #321616;
-  --cor-neutra: #a8a194;
-  --cor-neutra-fundo: #232a34;
+  --cor-neutra: #a3afbf;
+  --cor-neutra-fundo: #222a36;
 
-  --sombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+  --sombra-1: 0 1px 2px rgb(0 0 0 / 30%);
+  --sombra-2: 0 4px 16px rgb(0 0 0 / 35%);
+  --sombra-3: 0 16px 40px rgb(0 0 0 / 50%);
 }
 
 *,

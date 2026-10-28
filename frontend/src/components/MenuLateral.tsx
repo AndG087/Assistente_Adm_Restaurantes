@@ -119,10 +119,7 @@ export function MenuLateral({
       </nav>
 
       <div className="menu-lateral__rodape">
-        <div className="menu-lateral__ajustes">
-          <IndicadorStatus status={status} />
-          <BotaoTema {...tema} />
-        </div>
+        <IndicadorStatus status={status} />
         <div className="menu-lateral__usuario">
           <span className="avatar" aria-hidden="true">
             {iniciais(usuario.nome)}
@@ -130,6 +127,7 @@ export function MenuLateral({
           <span className="menu-lateral__usuario-nome" title={usuario.email}>
             {usuario.nome}
           </span>
+          <BotaoTema {...tema} compacto />
           <button type="button" className="botao botao--secundario" onClick={onSair}>
             Sair
           </button>

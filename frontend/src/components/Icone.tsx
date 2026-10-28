@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Pagina } from '../hooks/useNavegacao'
 
-export type NomeIcone = Pagina | 'menu' | 'fechar' | 'enviar' | 'sair' | 'mais' | 'sol' | 'lua'
+export type NomeIcone = Pagina | 'menu' | 'fechar' | 'enviar' | 'sair' | 'mais' | 'sol' | 'lua' | 'alerta' | 'relogio'
 
 // Traços simples em 24x24, desenhados aqui para não depender de biblioteca de ícones.
 const DESENHOS: Record<NomeIcone, ReactNode> = {
@@ -88,6 +88,18 @@ const DESENHOS: Record<NomeIcone, ReactNode> = {
     </>
   ),
   lua: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
+  alerta: (
+    <>
+      <path d="M10.3 4.2 2.8 17.5A2 2 0 0 0 4.5 20.5h15a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9.5v4.5M12 17.25h.01" />
+    </>
+  ),
+  relogio: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
 }
 
 export function Icone({ nome, tamanho = 20 }: { nome: NomeIcone; tamanho?: number }) {

@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { chamadas, corpoEnviado, json, renderizarNaArea, simularBackend } from '../test/backendFalso'
 import { Categorias } from './Categorias'
 import { Fornecedores } from './Fornecedores'
@@ -131,11 +131,20 @@ describe('Início', () => {
         }),
     })
 
-    renderizarNaArea(<Inicio irPara={() => {}} />)
+    const irPara = vi.fn()
+    renderizarNaArea(<Inicio irPara={irPara} />)
 
     expect(await screen.findByText(/R\$\s3\.500,00/)).toBeInTheDocument()
     expect(screen.getByText('2 contas')).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma conta')).toBeInTheDocument()
     expect(screen.getByText(/R\$\s2\.920,00/)).toBeInTheDocument()
     expect(screen.getByText('Sem categoria')).toBeInTheDocument()
+    // Participação de cada categoria no total, calculada dos próprios valores: 2500 / 2920 e 420 / 2920.
+    const categorias = screen.getByRole('list', { name: 'Despesas por categoria' })
+    expect(categorias).toHaveTextContent('85,6%')
+    expect(categorias).toHaveTextContent('14,4%')
+
+    await userEvent.click(screen.getByRole('button', { name: /Vencidas/ }))
+    expect(irPara).toHaveBeenCalledWith('contas')
   })
 })

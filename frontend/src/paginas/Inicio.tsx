@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { BarrasTotais } from '../components/BarrasTotais'
+import { Icone, type NomeIcone } from '../components/Icone'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
 import type { Pagina } from '../hooks/useNavegacao'
 import { buscarAlertas, resumoDespesas } from '../recursos/financeiro'
-import { formatarMoeda, mesDe } from '../utils/formato'
+import { formatarData, formatarMoeda, mesDe } from '../utils/formato'
 
 interface InicioProps {
   irPara: (pagina: Pagina) => void
@@ -28,19 +29,33 @@ export function Inicio({ irPara }: InicioProps) {
   )
 
   const a = alertas.dados
+  const r = resumo.dados
   // Lida uma vez, ao abrir a tela: a saudação não precisa mudar a cada novo desenho.
   const [agora] = useState(() => new Date())
 
   return (
     <div className="inicio">
-      <header className="inicio__boas-vindas">
-        <h2 className="inicio__saudacao">{saudacao(agora.getHours())}!</h2>
-        <p>Veja como estão as contas do restaurante hoje, {DATA_POR_EXTENSO.format(agora)}.</p>
+      <header className="cabecalho-pagina">
+        <div>
+          <p className="cabecalho-pagina__sobretitulo">{DATA_POR_EXTENSO.format(agora)}</p>
+          <h2 className="cabecalho-pagina__titulo">{saudacao(agora.getHours())}!</h2>
+          <p className="cabecalho-pagina__descricao">Veja como estão as contas do restaurante hoje.</p>
+        </div>
+        <div className="cabecalho-pagina__acoes">
+          <button type="button" className="botao botao--secundario" onClick={() => irPara('contas')}>
+            Ver contas a pagar
+          </button>
+          <button type="button" className="botao botao--primario" onClick={() => irPara('documentos')}>
+            <Icone nome="enviar" tamanho={18} />
+            Enviar nota ou boleto
+          </button>
+        </div>
       </header>
-      <section aria-labelledby="titulo-vencimentos">
-        <h2 id="titulo-vencimentos" className="inicio__titulo">
+
+      <section className="inicio__secao" aria-labelledby="titulo-vencimentos">
+        <h3 id="titulo-vencimentos" className="inicio__titulo-secao">
           Vencimentos
-        </h2>
+        </h3>
         {alertas.erro && (
           <p className="alerta alerta--erro" role="alert">
             {alertas.erro}
@@ -50,63 +65,78 @@ export function Inicio({ irPara }: InicioProps) {
           <div className="indicadores">
             <Indicador
               titulo="Vencidas"
+              icone="alerta"
               nivel={a.vencidas.quantidade ? 'erro' : 'neutro'}
               quantidade={a.vencidas.quantidade}
               valor={a.vencidas.valor_total}
+              onAbrir={() => irPara('contas')}
             />
             <Indicador
               titulo="Vencem hoje"
+              icone="relogio"
               nivel={a.vencem_hoje.quantidade ? 'alerta' : 'neutro'}
               quantidade={a.vencem_hoje.quantidade}
               valor={a.vencem_hoje.valor_total}
+              onAbrir={() => irPara('contas')}
             />
             <Indicador
               titulo={`Próximos ${a.dias} dias`}
+              icone="contas"
               nivel="neutro"
               quantidade={a.proximos_dias.quantidade}
               valor={a.proximos_dias.valor_total}
+              onAbrir={() => irPara('contas')}
             />
           </div>
         )}
-        <button type="button" className="link" onClick={() => irPara('contas')}>
-          Ver contas a pagar
-        </button>
       </section>
 
-      <section className="cartao inicio__despesas" aria-labelledby="titulo-despesas-mes">
-        <h2 id="titulo-despesas-mes" className="inicio__titulo">
-          Despesas de {NOME_DO_MES.format(new Date(`${mes.de}T12:00:00`))}
-        </h2>
+      <section className="cartao painel-despesas" aria-labelledby="titulo-despesas-mes">
+        <header className="painel-despesas__cabecalho">
+          <div>
+            <h3 id="titulo-despesas-mes" className="inicio__titulo-secao">
+              Despesas de {NOME_DO_MES.format(new Date(`${mes.de}T12:00:00`))}
+            </h3>
+            <p className="painel-despesas__periodo">
+              Por categoria · {formatarData(mes.de)} a {formatarData(mes.ate)}
+            </p>
+          </div>
+          {r && r.quantidade > 0 && (
+            <div className="painel-despesas__total">
+              <span className="painel-despesas__rotulo">Total do mês</span>
+              <strong>{formatarMoeda(r.valor_total)}</strong>
+              <span>
+                {r.quantidade} {r.quantidade === 1 ? 'despesa' : 'despesas'}
+              </span>
+            </div>
+          )}
+        </header>
+
         {resumo.erro && (
           <p className="alerta alerta--erro" role="alert">
             {resumo.erro}
           </p>
         )}
-        {resumo.dados &&
-          (resumo.dados.quantidade === 0 ? (
+        {r &&
+          (r.quantidade === 0 ? (
             <p className="vazio">Nenhuma despesa registrada neste mês.</p>
           ) : (
-            <>
-              <p className="inicio__total">
-                {formatarMoeda(resumo.dados.valor_total)}
-                <span>
-                  {' '}
-                  em {resumo.dados.quantidade} {resumo.dados.quantidade === 1 ? 'despesa' : 'despesas'}
-                </span>
-              </p>
-              <BarrasTotais
-                rotulo="Despesas por categoria"
-                itens={resumo.dados.por_categoria.map((c) => ({
-                  chave: String(c.categoria?.id ?? 'sem'),
-                  nome: c.categoria?.nome ?? 'Sem categoria',
-                  valor: c.valor_total,
-                }))}
-              />
-            </>
+            <BarrasTotais
+              rotulo="Despesas por categoria"
+              mostrarPercentual
+              itens={r.por_categoria.map((c) => ({
+                chave: String(c.categoria?.id ?? 'sem'),
+                nome: c.categoria?.nome ?? 'Sem categoria',
+                valor: c.valor_total,
+              }))}
+            />
           ))}
-        <button type="button" className="link" onClick={() => irPara('despesas')}>
-          Ver despesas
-        </button>
+
+        <footer className="painel-despesas__rodape">
+          <button type="button" className="link" onClick={() => irPara('despesas')}>
+            Ver todas as despesas
+          </button>
+        </footer>
       </section>
     </div>
   )
@@ -114,19 +144,25 @@ export function Inicio({ irPara }: InicioProps) {
 
 interface IndicadorProps {
   titulo: string
+  icone: NomeIcone
   nivel: 'erro' | 'alerta' | 'neutro'
   quantidade: number
   valor: string
+  onAbrir: () => void
 }
 
-function Indicador({ titulo, nivel, quantidade, valor }: IndicadorProps) {
+/** Cartão de vencimento; o cartão inteiro leva às contas a pagar. */
+function Indicador({ titulo, icone, nivel, quantidade, valor, onAbrir }: IndicadorProps) {
   return (
-    <div className={`cartao indicador indicador--${nivel}`}>
+    <button type="button" className={`cartao indicador indicador--${nivel}`} onClick={onAbrir}>
+      <span className="indicador__icone" aria-hidden="true">
+        <Icone nome={icone} tamanho={22} />
+      </span>
       <span className="indicador__titulo">{titulo}</span>
       <span className="indicador__valor">{formatarMoeda(valor)}</span>
       <span className="indicador__detalhe">
-        {quantidade} {quantidade === 1 ? 'conta' : 'contas'}
+        {quantidade === 0 ? 'Nenhuma conta' : `${quantidade} ${quantidade === 1 ? 'conta' : 'contas'}`}
       </span>
-    </div>
+    </button>
   )
 }
