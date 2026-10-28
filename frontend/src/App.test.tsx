@@ -70,6 +70,23 @@ describe('Acesso', () => {
     expect(screen.queryByLabelText('Mensagem para a IA')).not.toBeInTheDocument()
   })
 
+  it('mostra a faixa de demonstração só no modo de demonstração', async () => {
+    simularBackend({ ...NAO_LOGADO, 'GET /api/health': () => json({ status: 'ok', banco_de_dados: 'ok', modo_demonstracao: true }) })
+
+    render(<App />)
+
+    expect(await screen.findByRole('note')).toHaveTextContent('todos os dados são fictícios')
+  })
+
+  it('sem modo de demonstração, não há faixa', async () => {
+    simularBackend(NAO_LOGADO)
+
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'Acesse sua conta' })
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+
   it('indica backend fora do ar e permite tentar de novo', async () => {
     simularBackend({ 'GET /api/health': () => Promise.reject(new TypeError('Failed to fetch')) })
 

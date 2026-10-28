@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Restaurante Admin AI"
+    # Liga a faixa "Demonstração · dados fictícios" no frontend (ver iniciar_demonstracao.ps1).
+    modo_demonstracao: bool = False
 
     # Banco de dados local. A senha real fica apenas no .env.
     database_url: str = "mysql+pymysql://restaurante_app@localhost:3306/restaurante_admin"

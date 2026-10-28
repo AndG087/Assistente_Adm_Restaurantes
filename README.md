@@ -146,6 +146,24 @@ Invoke-WebRequest https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/por.t
 
 Sem o Tesseract, o sistema funciona normalmente; documentos que precisariam de OCR ficam com a situação "Erro na leitura" e podem ser lidos de novo depois da instalação (botão **Ler novamente**).
 
+### 6. Demonstração (opcional)
+
+Para apresentar o sistema com dados **fictícios** de um bar e restaurante, sem tocar no banco de desenvolvimento. Crie o banco da demonstração uma vez (como root):
+
+```sql
+CREATE DATABASE restaurante_admin_demo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON restaurante_admin_demo.* TO 'restaurante_app'@'localhost';
+```
+
+Depois, na raiz do projeto:
+
+```powershell
+.\iniciar_demonstracao.ps1 -Nome "Nome do Restaurante"            # usa a demonstração existente
+.\iniciar_demonstracao.ps1 -Nome "Nome do Restaurante" -Recriar   # apaga e recria os dados
+```
+
+O script aplica as migrações no banco `restaurante_admin_demo`, cria seis meses de despesas, contas (algumas vencidas e vencendo hoje) e três documentos para conferir, abre o frontend e roda o backend. Login: `demo@exemplo.com`, senha `demonstracao`. A tela mostra a faixa "Demonstração · dados fictícios". Roteiro sugerido: [`docs/roteiro-de-apresentacao.md`](docs/roteiro-de-apresentacao.md).
+
 ## Variáveis de ambiente
 
 Ficam em `backend\.env` (que **não** vai para o Git). Modelo em [`backend/.env.example`](backend/.env.example).
@@ -166,6 +184,7 @@ Ficam em `backend\.env` (que **não** vai para o Git). Modelo em [`backend/.env.
 | `TESSERACT_CMD` | `C:\Program Files\Tesseract-OCR\tesseract.exe` | Executável do Tesseract |
 | `TESSDATA_DIR` | `backend/tessdata` | Pasta com `por.traineddata` |
 | `OCR_MAXIMO_PAGINAS` | `10` | Páginas lidas por PDF |
+| `MODO_DEMONSTRACAO` | `false` | Mostra a faixa de dados fictícios (o script da demonstração já liga) |
 
 O frontend aceita opcionalmente `BACKEND_URL` (padrão `http://127.0.0.1:8000`) em `frontend\.env`, caso o backend rode em outra porta.
 

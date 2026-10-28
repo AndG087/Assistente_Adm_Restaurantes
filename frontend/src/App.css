@@ -23,6 +23,17 @@
   color: var(--cor-texto-suave);
 }
 
+.faixa-demonstracao {
+  margin: 0;
+  padding: 6px 16px;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
 /* Cabeçalho */
 
 .cabecalho {

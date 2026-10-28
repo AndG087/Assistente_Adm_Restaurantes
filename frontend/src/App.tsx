@@ -28,6 +28,11 @@ function App() {
 
   return (
     <div className="pagina">
+      {status.backend?.modo_demonstracao && (
+        <p className="faixa-demonstracao" role="note">
+          Demonstração · todos os dados são fictícios, criados para apresentar o sistema
+        </p>
+      )}
       <Cabecalho status={status} usuario={sessao.usuario} onSair={() => void sessao.sair()} />
       <main className="conteudo">{conteudo}</main>
       <footer className="rodape">Executado localmente · Nenhum dado é enviado para serviços externos</footer>

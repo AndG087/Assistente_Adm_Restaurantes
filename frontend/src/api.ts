@@ -5,6 +5,7 @@ export const TAMANHO_MAXIMO_MENSAGEM = 4000
 export interface HealthResponse {
   status: 'ok'
   banco_de_dados: 'ok' | 'indisponivel'
+  modo_demonstracao?: boolean
 }
 
 export interface IAStatusResponse {

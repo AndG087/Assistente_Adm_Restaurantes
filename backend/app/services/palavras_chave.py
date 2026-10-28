@@ -48,6 +48,11 @@ _REGRAS: list[tuple[str, list[str]]] = [
         r"conserto", r"manutencao", r"reparo", r"assistencia tecnica", r"encanador", r"eletricista",
         r"dedetizacao", r"pintura", r"troca de (peca|oleo|lampada)",
     ]),
+    # Categoria opcional (não está entre as padrão): vale para restaurantes que a criarem com este nome.
+    ("Música ao vivo e eventos", [
+        r"musica ao vivo", r"\bbanda\b", r"\bshows?\b", r"\bdj\b", r"\bmusicos?\b", r"cache (do|da|de)",
+        r"voz e violao",
+    ]),
     ("Marketing", [
         r"anuncio", r"propaganda", r"publicidade", r"marketing", r"instagram", r"facebook", r"google ads",
         r"panfleto", r"\bfolder\b", r"\bbanner\b", r"impulsionamento", r"influenciador",
