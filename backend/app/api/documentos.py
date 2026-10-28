@@ -6,9 +6,16 @@ from fastapi.responses import FileResponse
 from app.api.deps import DbSession, UsuarioAtual, VinculoRestaurante
 from app.core.config import get_settings
 from app.models import Documento, StatusDocumento
-from app.schemas.documento import DocumentoDetalhe, DocumentoResumo
-from app.services import armazenamento, documento_service
-from app.services.erros import OperacaoNaoPermitidaError
+from app.schemas.documento import (
+    ConferenciaResponse,
+    ConfirmacaoDocumento,
+    DocumentoDetalhe,
+    DocumentoResumo,
+    PossivelDuplicadoResponse,
+)
+from app.schemas.financeiro import Referencia
+from app.services import armazenamento, conferencia_service, documento_service
+from app.services.erros import OperacaoNaoPermitidaError, ReferenciaInvalidaError
 
 router = APIRouter(prefix="/restaurantes/{restaurante_id}/documentos", tags=["Documentos"])
 
@@ -81,6 +88,43 @@ def reprocessar(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdPosi
     documento = _obter_ou_404(db, vinculo, documento_id)
     try:
         return documento_service.reprocessar(db, documento, vinculo.restaurante.cnpj)
+    except OperacaoNaoPermitidaError as erro:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+
+
+@router.get("/{documento_id}/conferencia", response_model=ConferenciaResponse)
+def conferencia(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdPositivo) -> ConferenciaResponse:
+    """Fornecedor reconhecido pelo CNPJ e lançamentos que podem ser o mesmo documento."""
+    resultado = conferencia_service.preparar(db, _obter_ou_404(db, vinculo, documento_id))
+    fornecedor = resultado.fornecedor_sugerido
+    return ConferenciaResponse(
+        fornecedor_sugerido=Referencia.model_validate(fornecedor) if fornecedor else None,
+        possiveis_duplicados=[PossivelDuplicadoResponse.model_validate(d) for d in resultado.duplicados],
+    )
+
+
+@router.post("/{documento_id}/confirmar", response_model=DocumentoDetalhe)
+def confirmar(
+    dados: ConfirmacaoDocumento,
+    db: DbSession,
+    vinculo: VinculoRestaurante,
+    usuario: UsuarioAtual,
+    documento_id: IdPositivo,
+) -> Documento:
+    documento = _obter_ou_404(db, vinculo, documento_id)
+    try:
+        return conferencia_service.confirmar(db, documento, usuario.id, dados)
+    except ReferenciaInvalidaError as erro:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(erro)) from None
+    except OperacaoNaoPermitidaError as erro:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
+
+
+@router.post("/{documento_id}/descartar", response_model=DocumentoDetalhe)
+def descartar(db: DbSession, vinculo: VinculoRestaurante, documento_id: IdPositivo) -> Documento:
+    documento = _obter_ou_404(db, vinculo, documento_id)
+    try:
+        return conferencia_service.descartar(db, documento)
     except OperacaoNaoPermitidaError as erro:
         raise HTTPException(status.HTTP_409_CONFLICT, detail=str(erro)) from None
 

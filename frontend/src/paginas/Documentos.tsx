@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { ApiError } from '../api'
+import { ConferenciaDocumento } from '../components/ConferenciaDocumento'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
 import {
@@ -324,6 +325,15 @@ function DetalheDocumento({ id, onFechar }: DetalheDocumentoProps) {
               )}
             </div>
           </div>
+
+          {(d.status === 'pendente' || d.status === 'erro') && (
+            <ConferenciaDocumento documento={d} onConcluir={onFechar} />
+          )}
+          {d.status === 'concluido' && (
+            <p className="alerta alerta--ok" role="status">
+              Documento conferido: gerou {d.despesa_id ? 'uma despesa' : d.conta_pagar_id ? 'uma conta a pagar' : 'um lançamento (já removido)'}.
+            </p>
+          )}
 
           {d.texto_extraido && (
             <details className="cartao conferencia__texto">

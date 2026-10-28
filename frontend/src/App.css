@@ -694,6 +694,16 @@ textarea.campo__entrada {
   overflow-wrap: anywhere;
 }
 
+.filtros--sem-borda {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.conferencia__lado .painel-form {
+  max-width: none;
+}
+
 .duplicados {
   display: flex;
   flex-direction: column;

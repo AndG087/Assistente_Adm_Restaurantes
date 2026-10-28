@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { useArea } from '../contexto'
 import { useCarregar } from '../hooks/useCarregar'
 import { listarCategorias, listarFornecedores } from '../recursos/cadastros'
@@ -22,10 +22,23 @@ interface FormLancamentoProps {
   inicial?: LancamentoInicial
   onSalvar: (dados: DadosLancamento, data: string) => Promise<unknown>
   onCancelar: () => void
+  // Conteúdo extra logo abaixo do título (ex.: escolha entre despesa e conta na conferência).
+  cabecalho?: ReactNode
+  rotuloSalvar?: string
+  rotuloCancelar?: string
 }
 
 /** Formulário comum a despesas e contas a pagar. */
-export function FormLancamento({ titulo, rotuloData, inicial, onSalvar, onCancelar }: FormLancamentoProps) {
+export function FormLancamento({
+  titulo,
+  rotuloData,
+  inicial,
+  onSalvar,
+  onCancelar,
+  cabecalho,
+  rotuloSalvar = 'Salvar',
+  rotuloCancelar = 'Cancelar',
+}: FormLancamentoProps) {
   const { restaurante, mensagemDeErro } = useArea()
   const [descricao, setDescricao] = useState(inicial?.descricao ?? '')
   const [valor, setValor] = useState(inicial ? valorParaCampo(inicial.valor) : '')
@@ -85,6 +98,7 @@ export function FormLancamento({ titulo, rotuloData, inicial, onSalvar, onCancel
         <h2 id="titulo-lancamento" className="formulario__titulo">
           {titulo}
         </h2>
+        {cabecalho && <div className="campo--largo">{cabecalho}</div>}
 
         <label className="campo campo--largo">
           <span className="campo__rotulo">Descrição</span>
@@ -185,10 +199,10 @@ export function FormLancamento({ titulo, rotuloData, inicial, onSalvar, onCancel
 
         <div className="formulario__acoes campo--largo">
           <button type="button" className="botao botao--secundario" onClick={onCancelar}>
-            Cancelar
+            {rotuloCancelar}
           </button>
           <button type="submit" className="botao botao--primario" disabled={enviando}>
-            {enviando ? 'Salvando…' : 'Salvar'}
+            {enviando ? 'Salvando…' : rotuloSalvar}
           </button>
         </div>
       </form>

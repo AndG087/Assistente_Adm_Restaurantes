@@ -1,4 +1,5 @@
-import { comConsulta, requisitar } from '../api'
+import { comConsulta, enviarJson, requisitar } from '../api'
+import type { DadosLancamento } from './financeiro'
 
 export type StatusDocumento = 'pendente' | 'concluido' | 'descartado' | 'erro'
 
@@ -53,6 +54,36 @@ export function reprocessarDocumento(restauranteId: number, id: number): Promise
 
 export function excluirDocumento(restauranteId: number, id: number): Promise<void> {
   return requisitar(`${base(restauranteId)}/${id}`, { method: 'DELETE' })
+}
+
+export interface PossivelDuplicado {
+  tipo: 'despesa' | 'conta' | 'documento'
+  id: number
+  descricao: string
+  valor: string | null
+  data: string | null
+  motivo: string
+}
+
+export interface Conferencia {
+  fornecedor_sugerido: { id: number; nome: string } | null
+  possiveis_duplicados: PossivelDuplicado[]
+}
+
+export function obterConferencia(restauranteId: number, id: number): Promise<Conferencia> {
+  return requisitar(`${base(restauranteId)}/${id}/conferencia`)
+}
+
+export function confirmarDocumento(
+  restauranteId: number,
+  id: number,
+  dados: DadosLancamento & { tipo: 'despesa' | 'conta'; data: string },
+): Promise<DocumentoDetalhe> {
+  return requisitar(`${base(restauranteId)}/${id}/confirmar`, enviarJson('POST', dados))
+}
+
+export function descartarDocumento(restauranteId: number, id: number): Promise<DocumentoDetalhe> {
+  return requisitar(`${base(restauranteId)}/${id}/descartar`, { method: 'POST' })
 }
 
 export function urlDoArquivo(restauranteId: number, id: number): string {

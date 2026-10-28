@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from app.models.documento import StatusDocumento
+from app.schemas.financeiro import DataLancamento, DinheiroResposta, LancamentoBase, Referencia
 
 
 class DadosExtraidos(BaseModel):
@@ -35,3 +37,27 @@ class DocumentoResumo(BaseModel):
 
 class DocumentoDetalhe(DocumentoResumo):
     texto_extraido: str | None
+
+
+class PossivelDuplicadoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tipo: Literal["despesa", "conta", "documento"]
+    id: int
+    descricao: str
+    valor: DinheiroResposta | None
+    data: date | None
+    motivo: str
+
+
+class ConferenciaResponse(BaseModel):
+    # Fornecedor já cadastrado com o CNPJ encontrado no documento.
+    fornecedor_sugerido: Referencia | None
+    possiveis_duplicados: list[PossivelDuplicadoResponse]
+
+
+class ConfirmacaoDocumento(LancamentoBase):
+    """Dados conferidos pelo usuário. `data` é a data da despesa ou o vencimento da conta."""
+
+    tipo: Literal["despesa", "conta"]
+    data: DataLancamento
