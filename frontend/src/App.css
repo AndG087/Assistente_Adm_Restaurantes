@@ -158,7 +158,7 @@
   background-color: var(--cor-superficie);
   background-image:
     linear-gradient(to right, transparent 39px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 39px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 41px, transparent 41px),
-    repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--cor-primaria) 9%, transparent) 31px 32px);
+    repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--cor-secundaria) 16%, transparent) 31px 32px);
   box-shadow: var(--sombra);
 }
 
@@ -209,8 +209,8 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--cor-primaria-fundo);
-  color: var(--cor-primaria);
+  background: var(--cor-secundaria-fundo);
+  color: var(--cor-secundaria-texto);
   font-size: 0.875rem;
   font-weight: 800;
 }
@@ -239,7 +239,7 @@
     padding: 24px 20px 24px 52px;
     background-image:
       linear-gradient(to right, transparent 31px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 31px, color-mix(in srgb, var(--cor-margem) 45%, transparent) 33px, transparent 33px),
-      repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--cor-primaria) 9%, transparent) 31px 32px);
+      repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--cor-secundaria) 16%, transparent) 31px 32px);
   }
 
   .vitrine__titulo {
@@ -266,11 +266,11 @@
 .abas__item[aria-selected='true'] {
   background: var(--cor-superficie);
   color: var(--cor-primaria);
-  border-bottom-color: var(--cor-primaria);
+  border-bottom-color: var(--cor-secundaria);
 }
 
 .abas__item:focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 2px solid var(--cor-secundaria);
   outline-offset: -2px;
 }
 
@@ -323,7 +323,7 @@
 }
 
 .campo__entrada:focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 2px solid var(--cor-secundaria);
   outline-offset: 1px;
 }
 
@@ -362,7 +362,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: inherit;
+  color: var(--cor-secundaria-texto);
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
@@ -540,18 +540,19 @@
 }
 
 .menu-lateral__item[aria-current='page'] {
-  background: var(--cor-primaria-fundo);
-  color: var(--cor-primaria);
+  background: var(--cor-secundaria-fundo);
+  color: var(--cor-secundaria-texto);
+  box-shadow: inset 3px 0 0 var(--cor-secundaria);
 }
 
 .menu-lateral__item[aria-current='page'] .icone {
-  color: var(--cor-primaria);
+  color: var(--cor-secundaria);
 }
 
 .menu-lateral__item:focus-visible,
 .menu-lateral__fechar:focus-visible,
 .barra-movel__menu:focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 2px solid var(--cor-secundaria);
   outline-offset: 2px;
 }
 
@@ -586,8 +587,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--cor-primaria);
-  color: var(--cor-primaria-contraste);
+  background: var(--cor-secundaria-fundo);
+  color: var(--cor-secundaria-texto);
   font-size: 0.8125rem;
   font-weight: 700;
 }
@@ -730,7 +731,7 @@
 .campo-checkbox input {
   width: 18px;
   height: 18px;
-  accent-color: var(--cor-primaria);
+  accent-color: var(--cor-secundaria);
 }
 
 .segmentos {
@@ -761,7 +762,7 @@
 }
 
 .segmentos__item:focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 2px solid var(--cor-secundaria);
   outline-offset: -2px;
 }
 
@@ -1225,7 +1226,7 @@ a.botao {
   z-index: 1;
   width: min(24px, 60%);
   border-radius: 4px 4px 0 0;  /* ponta arredondada, base reta */
-  background: var(--cor-primaria);
+  background: var(--cor-secundaria);
   transition: filter 0.15s;
 }
 
@@ -1235,7 +1236,7 @@ a.botao {
 }
 
 .coluna:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--cor-primaria);
+  box-shadow: inset 0 0 0 2px var(--cor-secundaria);
 }
 
 .coluna__valor {
@@ -1448,7 +1449,7 @@ a.botao {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--cor-primaria);
+  background: var(--cor-secundaria);
 }
 
 /* Status */
@@ -1514,7 +1515,7 @@ a.botao {
 
 .botao:focus-visible,
 .chat-input__campo:focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 2px solid var(--cor-secundaria);
   outline-offset: 2px;
 }
 
@@ -1690,12 +1691,12 @@ a.botao {
 }
 
 .sugestoes__item:not(:disabled):hover {
-  border-color: var(--cor-primaria);
-  color: var(--cor-primaria);
+  border-color: var(--cor-secundaria);
+  color: var(--cor-secundaria);
 }
 
 .sugestoes__item:focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 2px solid var(--cor-secundaria);
   outline-offset: 2px;
 }
 

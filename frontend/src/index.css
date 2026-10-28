@@ -1,11 +1,15 @@
 /* Tokens de design e estilos base
  *
- * Identidade do Caderninho: papel de caderno (fundo creme) e caneta azul (cor principal).
- * Vermelho e laranja ficam reservados para "vencida" e "vence hoje", para não confundir.
+ * Identidade do Caderninho: fundo branco-gelo, caneta azul-tinta (cor principal) e azul céu
+ * (cor secundária: ícones, gráficos, item ativo, foco). Vermelho e laranja ficam reservados
+ * para "vencida" e "vence hoje", para não confundir.
+ *
+ * O azul céu puro (#267bf1) tem contraste 4:1 no branco: serve para ícones e barras, não para
+ * texto miúdo (mínimo 4,5:1). Texto em azul céu usa --cor-secundaria-texto (#1a66d2, 5,3:1).
  */
 
 :root {
-  --cor-fundo: #f6f2e9;
+  --cor-fundo: #ddd9ce;
   --cor-superficie: #fffdf8;
   --cor-superficie-suave: #faf6ee;
   --cor-borda: #e6dece;
@@ -15,6 +19,9 @@
   --cor-primaria-hover: #1a3254;
   --cor-primaria-contraste: #ffffff;
   --cor-primaria-fundo: #e8eef8;
+  --cor-secundaria: #267bf1;
+  --cor-secundaria-texto: #1a66d2;
+  --cor-secundaria-fundo: #e2edfd;
   --cor-margem: #d64545;
   --cor-mensagem-usuario: #24426e;
   --cor-mensagem-usuario-texto: #ffffff;
@@ -55,6 +62,9 @@
     --cor-primaria-hover: #b2cdf8;
     --cor-primaria-contraste: #0d1a2e;
     --cor-primaria-fundo: #1d2b42;
+    --cor-secundaria: #3d8bf3;
+    --cor-secundaria-texto: #7db2f8;
+    --cor-secundaria-fundo: #172c48;
     --cor-margem: #f07878;
     --cor-mensagem-usuario: #2a4570;
     --cor-mensagem-usuario-texto: #eef4ff;
