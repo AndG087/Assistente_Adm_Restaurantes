@@ -51,9 +51,14 @@ export function corpoEnviado(chamada: { init?: RequestInit }): unknown {
 export const RESTAURANTE: Restaurante = { id: 10, nome: 'Cantina da Ana', cnpj: '11222333000181', papel: 'proprietario' }
 
 /** Renderiza uma página da área logada já com o restaurante selecionado. */
-export function renderizarNaArea(ui: ReactNode, sessaoExpirou = vi.fn()) {
+export function renderizarNaArea(ui: ReactNode, restaurante: Restaurante = RESTAURANTE) {
+  const sessaoExpirou = vi.fn()
+  const recarregarRestaurantes = vi.fn()
   return {
     sessaoExpirou,
-    ...render(<AreaContext.Provider value={{ restaurante: RESTAURANTE, sessaoExpirou }}>{ui}</AreaContext.Provider>),
+    recarregarRestaurantes,
+    ...render(
+      <AreaContext.Provider value={{ restaurante, sessaoExpirou, recarregarRestaurantes }}>{ui}</AreaContext.Provider>,
+    ),
   }
 }

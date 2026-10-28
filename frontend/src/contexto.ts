@@ -4,6 +4,8 @@ import { ApiError, type Restaurante } from './api'
 export interface ContextoArea {
   restaurante: Restaurante
   sessaoExpirou: () => void
+  // Ex.: depois de sair de um restaurante ou mudar o próprio papel.
+  recarregarRestaurantes: () => void
 }
 
 export const AreaContext = createContext<ContextoArea | null>(null)

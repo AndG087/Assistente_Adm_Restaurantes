@@ -36,5 +36,6 @@ O produto atenderá vários restaurantes, e cada usuário só pode ver os dados 
 
 - O chat passou a exigir login; `/api/health` e `/api/ia/status` seguem públicos para a tela de entrada mostrar o status.
 - O cadastro é aberto (qualquer pessoa com acesso à máquina cria conta). Aceitável enquanto o sistema roda só localmente; antes de expor na rede será preciso convite ou aprovação.
-- Ainda não há limite de tentativas de login nem convite de outros usuários para um restaurante.
+- Ainda não há limite de tentativas de login.
+- Equipe (complemento, 2026-10-27): o proprietário adiciona pessoas que já têm conta, pelo e-mail; membros usam as funções financeiras, só proprietários gerenciam a equipe, e o último proprietário não pode ser removido nem rebaixado. Gerenciar a equipe responde 403 a um membro (ele já sabe que o restaurante existe).
 - Em produção com HTTPS, `COOKIE_SEGURO` deve ser `true`.

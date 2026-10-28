@@ -6,6 +6,7 @@ import { useRestaurantes } from '../hooks/useRestaurantes'
 import { Categorias } from '../paginas/Categorias'
 import { ContasPagar } from '../paginas/ContasPagar'
 import { Despesas } from '../paginas/Despesas'
+import { Equipe } from '../paginas/Equipe'
 import { Documentos } from '../paginas/Documentos'
 import { Fornecedores } from '../paginas/Fornecedores'
 import { Inicio } from '../paginas/Inicio'
@@ -33,9 +34,13 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
     if (sessaoExpirada) onSessaoExpirada()
   }, [sessaoExpirada, onSessaoExpirada])
 
+  const { recarregar } = restaurantes
   const contexto = useMemo(
-    () => (selecionado ? { restaurante: selecionado, sessaoExpirou: onSessaoExpirada } : null),
-    [selecionado, onSessaoExpirada],
+    () =>
+      selecionado
+        ? { restaurante: selecionado, sessaoExpirou: onSessaoExpirada, recarregarRestaurantes: recarregar }
+        : null,
+    [selecionado, onSessaoExpirada, recarregar],
   )
 
   if (restaurantes.carregando) {
@@ -87,6 +92,8 @@ export function AreaLogada({ statusIA, onFalhaIA, onSessaoExpirada }: AreaLogada
         return <Fornecedores />
       case 'categorias':
         return <Categorias />
+      case 'equipe':
+        return <Equipe />
       case 'assistente':
         return <ChatWindow statusIA={statusIA} onFalha={onFalhaIA} onSessaoExpirada={onSessaoExpirada} />
       default:

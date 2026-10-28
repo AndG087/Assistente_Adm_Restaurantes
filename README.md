@@ -4,15 +4,15 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 
 **Tudo roda no computador local**, com ferramentas gratuitas: nenhum serviço pago, API externa ou banco hospedado. A IA é executada pelo [Ollama](https://docs.ollama.com/).
 
-> **Estado atual — etapa 5.** Já funciona:
+> **Estado atual — etapas 1 a 10 concluídas.**
 >
-> - contas de usuário (cadastro, login, logout) e restaurantes, com isolamento total entre restaurantes;
-> - fornecedores e categorias financeiras (cada restaurante novo já vem com 14 categorias padrão);
-> - despesas com filtros por período, categoria e texto, e totais por categoria calculados no banco;
-> - contas a pagar com situação (vencida, vence hoje, a vencer, paga), pagamento que gera a despesa automaticamente e alertas de vencimento na página inicial;
-> - chat com a IA local (exige login).
->
-> A IA ainda **não** acessa dados financeiros, não cadastra nada e não executa ações. Próximos passos: importação de documentos com OCR e consultas da IA aos dados.
+> - **Contas e equipe:** cadastro, login e restaurantes com isolamento total; o proprietário adiciona outras pessoas à equipe.
+> - **Cadastros:** fornecedores (CPF/CNPJ validado) e categorias financeiras (14 padrão por restaurante).
+> - **Despesas e contas a pagar:** filtros, totais calculados no banco, pagamento que gera a despesa e alertas de vencimento.
+> - **Documentos:** envio de notas, boletos e comprovantes (PDF, JPG, PNG), leitura do texto (OCR local com Tesseract), conferência com o formulário já preenchido e aviso de possíveis duplicados.
+> - **Sugestão de categoria:** por palavras-chave, pelo histórico do fornecedor e, por último, pela IA local.
+> - **Assistente:** responde perguntas sobre os dados ("quanto gastei com bebidas em outubro?") com valores vindos do banco; a IA só ajuda a entender a pergunta.
+> - **Relatórios:** evolução mensal, totais por categoria e fornecedor e exportação em CSV.
 
 ## Tecnologias
 
@@ -20,6 +20,7 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 |---|---|
 | Frontend | React 19, TypeScript, Vite, CSS puro, Vitest + Testing Library |
 | Backend | Python 3.12, FastAPI, Pydantic, SQLAlchemy 2, Alembic, httpx, Pytest |
+| Documentos | pypdf (texto de PDFs), pypdfium2 + Pillow (imagens), Tesseract OCR local |
 | Banco de dados | MySQL 9.2 local (driver PyMySQL) |
 | IA | Ollama local, modelo `llama3.2:1b` (configurável) |
 
@@ -28,7 +29,8 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 - **Python 3.12** ou superior
 - **Node.js 22** ou superior (com npm)
 - **MySQL 8 ou 9** em execução local
-- **Ollama** (opcional para iniciar o sistema; necessário para o chat)
+- **Ollama** (opcional: sem ele, o sistema e as perguntas sobre os dados funcionam; a conversa geral e a última camada da sugestão de categoria ficam indisponíveis)
+- **Tesseract OCR** (opcional: necessário só para fotos e PDFs escaneados)
 
 ## Estrutura
 
@@ -40,7 +42,7 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 │   │   ├── core/         # configurações, banco, senhas, tokens e data/hora
 │   │   ├── models/       # tabelas (usuários, restaurantes, fornecedores, categorias, despesas, contas…)
 │   │   ├── schemas/      # validação de entrada e saída (Pydantic) e validadores de CPF/CNPJ
-│   │   ├── services/     # regras de negócio e integração com o Ollama
+│   │   ├── services/     # regras de negócio, OCR, Ollama e o assistente (services/assistente/)
 │   │   └── main.py       # aplicação FastAPI
 │   ├── alembic/          # migrações do banco
 │   ├── tests/            # testes do backend
@@ -48,7 +50,7 @@ Assistente administrativo inteligente para pequenos e médios restaurantes. O ob
 │   └── requirements.txt
 ├── frontend/
 │   └── src/
-│       ├── paginas/      # Início, Despesas, Contas a pagar, Fornecedores, Categorias
+│       ├── paginas/      # Início, Despesas, Contas, Documentos, Relatórios, Fornecedores, Categorias, Equipe
 │       ├── components/   # TelaAcesso, AreaLogada, FormLancamento, Cabecalho, chat…
 │       ├── hooks/        # useSessao, useRestaurantes, useCarregar, useNavegacao…
 │       ├── recursos/     # funções de acesso à API por recurso
@@ -203,7 +205,7 @@ Ambos escutam apenas em `127.0.0.1`: não ficam acessíveis pela rede.
 | GET | `/api/restaurantes` | sim | Restaurantes dos quais o usuário é membro |
 | POST | `/api/restaurantes` | sim | Cria um restaurante (`nome`, `cnpj` opcional); o usuário vira proprietário |
 | GET | `/api/restaurantes/{id}` | sim | Um restaurante (404 se o usuário não for membro) |
-| POST | `/api/ia/chat` | sim | Envia `{"mensagem": "..."}` e recebe `{"resposta": "...", "modelo": "..."}` |
+| POST | `/api/ia/chat` | sim | Conversa geral com o modelo, sem acesso aos dados |
 
 A sessão é um cookie `HttpOnly` enviado automaticamente pelo navegador. Detalhes em [`docs/decisoes/003-autenticacao-e-isolamento.md`](docs/decisoes/003-autenticacao-e-isolamento.md).
 
@@ -223,13 +225,27 @@ As rotas financeiras ficam dentro do restaurante, `/api/restaurantes/{id}/...`, 
 | GET, PUT, DELETE | `.../contas-a-pagar/{id}` | Consulta, altera e exclui (só pendentes) |
 | POST | `.../contas-a-pagar/{id}/pagar` | Marca como paga (`data_pagamento`, padrão hoje) e cria a despesa |
 | POST | `.../contas-a-pagar/{id}/desfazer-pagamento` | Volta para pendente e remove a despesa gerada |
+| GET, POST | `.../documentos` | Lista (`status`) e envia um arquivo (`multipart`, campo `arquivo`) |
+| GET, DELETE | `.../documentos/{id}` | Detalhe com o texto lido; exclui (só não conferidos) |
+| GET | `.../documentos/{id}/arquivo` | O arquivo original |
+| GET | `.../documentos/{id}/conferencia` | Fornecedor reconhecido pelo CNPJ e possíveis duplicados |
+| POST | `.../documentos/{id}/confirmar` | Cria a despesa ou conta (`tipo`, dados conferidos) |
+| POST | `.../documentos/{id}/descartar`, `.../reprocessar` | Descarta, ou lê o texto de novo |
+| POST | `.../sugestoes/categoria` | Sugere a categoria (`descricao`, `fornecedor_id`) |
+| POST | `.../assistente` | Pergunta sobre os dados (`mensagem`); devolve a resposta, o que foi consultado e uma tabela |
+| GET | `.../relatorios/mensal` | Total por mês (`meses`, padrão 12) e média mensal |
+| GET | `.../relatorios/fornecedores` | Totais por fornecedor (`de`, `ate`) |
+| GET | `.../relatorios/despesas.csv`, `.../contas.csv` | Exportação para Excel |
+| GET, POST | `.../membros` | Equipe; adicionar exige ser proprietário (`email`, `papel`) |
+| PUT, DELETE | `.../membros/{usuario_id}` | Muda o papel ou remove (qualquer um pode sair) |
 
 Valores em dinheiro são enviados e recebidos como texto com ponto decimal (`"1234.50"`), para não perder centavos.
 
 ## Testes
 
 ```powershell
-# Backend (não precisa do MySQL nem do Ollama: tudo é simulado)
+# Backend: usa o banco restaurante_admin_test (precisa do MySQL ligado);
+# Ollama e OCR são simulados (os testes de OCR real rodam só se o Tesseract estiver instalado)
 cd backend
 .venv\Scripts\python -m pytest
 cd ..
@@ -254,13 +270,20 @@ npm --prefix frontend run build
 | `RuntimeError: 'cryptography' package is required` | Instale as dependências pelo `requirements.txt`; o MySQL 9 exige esse pacote. |
 | `npm create vite ... -- --template` ignora o template no PowerShell | O PowerShell descarta o `--`. Use `npm create vite@latest pasta '--' --template react-ts` ou rode pelo Git Bash. |
 | Execução de scripts desabilitada ao rodar `npm` no PowerShell | Use `npm.cmd` no lugar de `npm`, ou ajuste a política com `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. |
+| Documento com "Erro na leitura: O OCR não está disponível" | Instale o Tesseract e o `por.traineddata` (seção 5) e clique em **Ler novamente** no documento. |
+| Valores ou datas lidos errado de uma foto | Fotos tortas, escuras ou de baixa resolução confundem o OCR. Corrija na conferência ou envie uma foto mais nítida; PDFs gerados por sistema são lidos sem OCR. |
+| Sugestão de categoria ou conversa geral de baixa qualidade | O modelo `llama3.2:1b` é pequeno. Com memória disponível, use um maior (ex.: `ollama pull llama3.2:3b` e `OLLAMA_MODEL=llama3.2:3b`). As respostas sobre os dados não dependem do modelo. |
+| Assistente entendeu outro período | A resposta mostra o que foi consultado (ex.: "01/09/2026 a 30/09/2026"). Reescreva com um período explícito: "este mês", "em setembro", "últimos 15 dias". |
 
 ## Segurança
 
-- Aplicação apenas local; nenhuma porta é publicada.
-- Senhas apenas em `backend\.env`, fora do Git.
-- Toda entrada é validada pelo backend (mensagem de 1 a 4000 caracteres, sem campos extras).
+- Aplicação apenas local; nenhuma porta é publicada e nenhum documento ou pergunta sai do computador.
+- Senhas apenas em `backend\.env`, fora do Git. Senhas de usuários com scrypt; sessão em cookie `HttpOnly`.
+- Cada consulta do backend é filtrada pelo restaurante do usuário logado; quem não é da equipe recebe 404.
+- Toda entrada é validada pelo backend (tamanhos, formatos, CPF/CNPJ, sem campos extras).
+- Arquivos enviados: tipo conferido pelo conteúdo, tamanho limitado, nome interno gerado pelo sistema.
+- CSV exportado com proteção contra injeção de fórmulas (células começando com `=`, `+`, `-`, `@`).
 - Erros retornam mensagens fixas, sem detalhes internos; os logs não registram o conteúdo das mensagens.
-- A IA não executa comandos, não acessa arquivos e não tem acesso a dados. Valores financeiros, quando existirem, virão do banco e de cálculos feitos pelo backend, nunca da IA.
+- **A IA nunca é fonte de verdade para valores.** No assistente, ela só escolhe entre consultas pré-definidas; os números vêm do banco e as frases são modelos fixos. Na sugestão de categoria, só pode escolher uma categoria existente, e o usuário confirma. Texto de documentos e perguntas é tratado como dado, nunca como instrução, e o modelo não executa comandos nem acessa arquivos.
 
 Decisões de arquitetura: [`docs/decisoes/`](docs/decisoes/).

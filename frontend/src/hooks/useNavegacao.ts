@@ -8,6 +8,7 @@ export const PAGINAS = {
   relatorios: 'Relatórios',
   fornecedores: 'Fornecedores',
   categorias: 'Categorias',
+  equipe: 'Equipe',
   assistente: 'Assistente',
 } as const
 
